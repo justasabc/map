@@ -1,0 +1,119 @@
+
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+    <title></title>
+    <style>
+        html, body {
+            height:100%;width:100%;margin:0;padding:0;
+        }
+    </style>
+    <script src="http://19.134.126.50/CCZFTest/scripts/jquery-1.11.0.min.js"></script>
+    <script src="http://19.134.126.50/CCZFTest/scripts/jquery.json.js"></script>
+    <script src="http://19.134.126.50/CCZFTest/scripts/jquery.postMessage.js"></script>
+</head>
+<body>
+    <button value="test" onclick="testZoomtoFunc()">Zoom to By XY</button>
+    <button value="test" onclick="testZoomtoByUrl()">Zoom to By URL</button>
+    <button value="test" onclick="testEdit()">Editing</button>
+    <button value="test" onclick="testShowLayer()">ShowLayer</button>
+    <iframe id="frameMap" src="http://19.134.126.50/CCZFGIS/map/zoomto" width="100%" height="100%" style="width:100%;height:100%;" frameborder="0"></iframe>
+</body>
+</html>
+
+<script>
+	//测试用的xy坐标
+	var x = 508380.569, y = 2544578.903;
+
+	$(document).ready(function () {
+	});
+
+	//通过调用地图页面方法定位
+	function testZoomtoFunc() {
+		$('#frameMap').postMessage({
+			func: 'showLocaGraphic',
+			data: { x: x, y: y }
+		});
+	}
+	
+
+	//通过传参定位
+	function testZoomtoByUrl() {
+		var url = "http://19.134.126.50/CCZFGIS/map/zoomto?x=508380.569&y=2544578.903";
+		$('#frameMap').attr('src', url);
+	}
+
+
+	//通过传参编辑 通过调用地图页面方法编辑
+	function testEdit() {
+		//var url = "http://19.134.126.50/CCZFGIS/map/zoomto?x=508380.569&y=2544578.903&edit=true";
+		//$('#frameMap').attr('src', url);
+
+		$('#frameMap').postMessage({
+			func: 'enableEdit',
+			data: { x: x, y: y}
+		});
+	}
+
+	//通过传参打开图层
+	function testShowLayer() {
+	/*
+	基础地图：
+	矢量： CCSLLayer_1
+	影像： CCYXLayer_1
+	25D影像：CCGTFZH_1
+	
+	网格：
+	镇街网格: CCZF_WG_0
+	社区网格: CCZF_WG_1
+	微网格:   CCZF_WG_2
+	
+	摄像头: CCZF_CAMERA_1
+	*/
+		$('#frameMap').postMessage({
+			func: 'ShowLayer',
+			data: { layer: 'CCZF_WG_0' }
+		});
+	}
+
+
+	//地图回调的统一入口
+	function mapCallBack(jsonObj) {
+		if (jsonObj != 'undefined') {
+			if (jsonObj.x != 'undefined') {
+				alert(jsonObj.x + "," + jsonObj.y + "," + jsonObj.key);
+			}
+		}
+	}
+
+
+
+	/************************ 未完成的方法 ******************************/
+
+	//通过调用地图页面方法，描点
+	function testAddEventPoints() {
+		$('#frameMap').postMessage({
+			func: 'addGraphics',
+			data: {
+				layer: 'CCZF_SJ',
+				graphics:[]
+			}
+		});
+	}
+
+
+	//通过调用地图页面方法，回放网格员轨迹
+	function testShowWGGJ() {
+		$('#frameMap').postMessage({
+			//func: 'addGraphics',
+			//data: {
+			//    layer: 'CCZF_SJ',
+			//    graphics: []
+			//}
+		});
+	}
+</script>

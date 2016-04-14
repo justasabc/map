@@ -1,0 +1,47 @@
+{
+  "serviceDescription":"MapService",
+  "mapName":"地图服务",
+  "description":"OGC Map Service REST",
+  "copyrightText":"Company: 武大吉奥信息技术有限公司  Copyright (c) 1999-2010",
+  "layers":[
+    {
+      "id":0,
+      "name":"CCGTFZH2013",
+      "defaultVisibility":true,
+      "parentLayerId":-1,
+      "subLayerIds":null
+    }
+  ],
+  "spatialReference":{
+    "wkid":-9999
+  },
+  "initialExtent":{
+    "xmin":496117.80467445566,
+    "ymin":2535231.9442850314,
+    "xmax":517781.26885500166,
+    "ymax":2552716.944999657,
+    "spatialReference":{
+      "wkid":-9999
+    }
+  },
+  "fullExtent":{
+    "xmin":496117.80467445566,
+    "ymin":2535231.9442850314,
+    "xmax":517781.26885500166,
+    "ymax":2552716.944999657,
+    "spatialReference":{
+      "wkid":-9999
+    }
+  },
+  "units":"DecimalDegrees",
+  "supportedImageFormatTypes":"PNG,JPEG,GIF",
+  "documentInfo":{
+    "title":"MapService",
+    "Author":"Mr Lin",
+    "Comments":"OGC Map Service REST",
+    "Subject":"地图服务",
+    "Category":"REST",
+    "Keywords":"OGC MapService REST"
+  },
+  "capabilities":"Map,Query,Data"
+}

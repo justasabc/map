@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+	<meta name="viewport" content="initial-scale=1.0, user-scalable=no" />
+	<style type="text/css">
+		body, html{width: 100%;height: 100%;margin:0;font-family:"Î¢ÈíÑÅºÚ";}
+		#left { float:left; width:50%; height: 500px;}
+		#right { float:right; width:50%; height: 500px; }
+		#result {width:100%;font-size:12px;}
+	</style>
+	<script type="text/javascript" src="http://api.map.baidu.com/api?v=2.0&ak=627348740657010a651a38fd51ac075c"></script>
+	<title>By position or by ID</title>
+</head>
+<body>
+	<div id="left"></div>
+	<div id="right"></div>
+	<div id="result">
+		<button id="show">show</button>
+		<button id="hide">hide</button>
+	</div>
+	<div id="info"></div>
+</body>
+</html>
+<script type="text/javascript"> 
+// http://developer.baidu.com/map/reference/index.php?title=Class:%E6%A0%B8%E5%BF%83%E7%B1%BB/Map
+ 
+	var lastPoint = new BMap.Point(120.320032, 31.589666);
+	var map = new BMap.Map('left');
+	map.centerAndZoom(lastPoint, 12);
+	//map.addTileLayer(new BMap.PanoramaCoverageLayer());
+	
+	var stCtrl = new BMap.PanoramaControl(); 
+	stCtrl.setOffset(new BMap.Size(20, 20));
+	map.addControl(stCtrl);
+	
+	var panoramaService = new BMap.PanoramaService();
+	var panorama = new BMap.Panorama('right'); 
+	panorama.setPov({heading: -40, pitch: 6});
+	
+	map.addEventListener("click",function(e){
+		console.log(e.point);
+
+		//document.getElementById('info').innerHTML= e.point;
+		
+		/*
+		panoramaService.getPanoramaByLocation(e.point, function(data){
+			var panoramaInfo="";
+			if (data == null) {
+					panoramaInfo = "NO DATA";
+					document.getElementById('info').innerHTML= panoramaInfo;
+					// hide 
+					hidePanorama();
+			}else {
+				panoramaInfo +='[id]'+data.id+'\n';
+				panoramaInfo +='<br/>[des] '+data.description+'\n';
+				document.getElementById('info').innerHTML= panoramaInfo;
+				// show
+				lastPoint = e.point;
+				showPanorama(lastPoint);
+			}
+		});
+		*/
+		
+	});
+	
+	function showPanorama(point){
+		panorama.setPosition(point);
+		//panorama.setPosition(new BMap.Point(120.320032, 31.589666));
+		//panorama.setId('0100010000130501122416015Z1');
+		panorama.show();
+	}
+	
+	function hidePanorama(){
+		panorama.hide();
+	}
+	
+	document.getElementById("show").onclick = function(){ 
+		showPanorama(lastPoint);
+	};
+	document.getElementById("hide").onclick = function(){ 
+		hidePanorama();
+	};
+</script>
+

@@ -1,0 +1,606 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+	<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+	<title>Baidu FS Map Point Matcher</title>
+	<script type="text/javascript" src="http://api.map.baidu.com/api?v=2.0&ak=627348740657010a651a38fd51ac075c"></script>
+	<script src="geo/proj4js-compressed.js"></script>
+	<script src="geo/OpenLayers/OpenLayers-debug.js"></script>
+	<script src="geo/GeoGlobeJS.debug.js"></script>
+	<script src="js/jquery-1.7.2.min.js"></script>
+	
+	<script src="js/util/PointUtil.min.js"></script>
+	<script src="js/util/IOUtil.js"></script>
+	<script src="js/util/BaiduUtil.js"></script>
+	<script src="js/util/FSUtil.js"></script>
+	<style>
+		body, html{width: 100%;height: 100%;margin:0;font-family:"΢ɭ҅ۚ";}
+		#left { float:left; width:50%; height: 500px;}
+		#right { float:right; width:50%; height: 500px; }
+		#result {width:100%;font-size:12px;}
+	</style>
+</head>
+<body>
+	<div id="left"></div>
+	<div id="right"></div>
+	<div id="show">
+		<button id="createGrid">Show Grid</button>
+		<button id="showPoints">Show Marked Points</button>
+		<button id="showByGrid">Show by Grid</button>
+		<button id="test">Testing</button>
+	</div>
+	<div id="show">
+		<button id="outputPoints">Output Points</button>
+		<button id="savePoints" >Save Points</button>
+		<button id="saveField">Save Field</button>
+	</div>
+	<div id="mark">
+		<button id="saveFSPoint" >1-----佛山</button>
+		<button id="saveBaiduPoint">2-----百度</button>
+	</div>
+	<div id="bd"></div>
+	<div id="fs"></div>
+	<div id="info"></div>
+</body>
+</html>
+
+<script>
+	function baidu2fs(point_bd){
+		var bd = {lon:point_bd.lng,lat:point_bd.lat}; // lng,lat
+		var result = baidu_to_fs_allInOne(bd);
+		var fs = new Geo.LonLat(result.lon,result.lat);
+		return fs;
+	};
+	
+	function fs2baidu(point_fs){
+		var fs = {lon:point_fs.lon,lat:point_fs.lat}; // lon,lat
+		var result = fs_to_baidu_allInOne(fs);
+		var bd = new BMap.Point(result.lon,result.lat);
+		return bd;
+	};
+
+	var point_fs = new Geo.LonLat(508005.71000913,2546218.3446376);
+	var point_bd = fs2baidu(point_fs);
+	var level_bd = 13;// level 1-19
+	var level_fs = 0;// level 0-7
+	
+	function test(){
+	};
+	
+	// ===================================================================
+	// grid related
+	// ===================================================================
+	var xmin = 497000;
+	var xmax = 517000;
+	var ymin = 2536000;
+	var ymax = 2551000;
+	var x_delta = 5000;
+	var y_delta = 5000;
+	
+	function createGrid(){
+		for(var x = xmin; x<xmax; x+=x_delta) // 20
+			for(var y = ymin; y<ymax; y+=y_delta){ // 15
+				var pt_fs = new Geo.LonLat(x,y);
+				addGridByFSPoint(pt_fs);
+			}
+	};
+				
+	function addGridByFSPoint(pt_fs){
+		var grid_index = getPointGridIndex(pt_fs);
+		var grid_points= get4GridPointsByIndex(grid_index);
+		//var points_in_grid = getPointsInGrid(grid_index);
+		var grid_center_bd = getBaiduGridCenter(grid_points);
+		
+		// baidu
+		addBaiduGridLine(grid_points);
+		addBaiduGridLabel(grid_index,grid_center_bd);
+		
+		// fs
+		addFSGridLine(grid_points);
+	};
+	
+	function getPointGridIndex(pt_fs){
+		var x = parseInt((pt_fs.lon-xmin)/x_delta);
+		var y = parseInt((pt_fs.lat-ymin)/y_delta);
+		return {x:x,y:y};
+	};
+	
+	function get4GridPointsByIndex(grid_index){
+		var ix = grid_index.x;
+		var iy = grid_index.y;
+		
+		// left origin 
+		var x = ix*x_delta+xmin;
+		var y = iy*y_delta+ymin
+		
+		var points = [
+			[x,y],
+			[x+x_delta,y],
+			[x+x_delta,y+y_delta],
+			[x,y+y_delta],
+		];
+		
+		points.forEach(function(p){
+			var pt_fs = new OpenLayers.LonLat(p[0],p[1]);
+			var pt_bd = fs2baidu(pt_fs);
+			
+			// push bd point
+			p.push(pt_bd.lng);
+			p.push(pt_bd.lat);
+		});
+		
+		return points;
+	};
+	
+	function getBaiduGridCenter(grid_points){
+		var p1 = grid_points[0];
+		var p2 = grid_points[2];
+		
+		var cx = (p1[2]+p2[2])/2;
+		var cy = (p1[3]+p2[3])/2;
+		var grid_center_bd = new BMap.Point(cx,cy);
+		return grid_center_bd;
+	};
+	
+	function getPointsInGrid(grid_index){
+		var points_in_grid = [];
+		point_pairs.forEach(function(p){
+			var pt_fs = new OpenLayers.LonLat(p[0],p[1]);
+			var pt_bd = new BMap.Point(p[2],p[3]);
+			
+			var index = getPointGridIndex(pt_fs);
+			if(index.x ==grid_index.x && index.y==grid_index.y){
+				points_in_grid.push(p);
+			}
+		});
+		
+		return points_in_grid;
+	}
+	
+	function showByGrid(){
+		var x = 0;
+		var y = 0;
+		var grid_index = {x:x,y:y};
+		var points_in_grid = getPointsInGrid(grid_index);
+		
+		clearPoints();
+		showPoints(points_in_grid);
+		
+		var p = points_in_grid[0];
+		var pt_fs = new OpenLayers.LonLat(p[0],p[1]);
+		addGridByFSPoint(pt_fs);
+	}
+	
+	function showPoints(points){
+		// for each data to add points to map
+		points.forEach(function(p){
+			var pt_fs = new OpenLayers.LonLat(p[0],p[1]);
+			addFSPoint(pt_fs);
+			
+			var pt_bd = new BMap.Point(p[2],p[3]);
+			addBaiduPoint(pt_bd);
+		});
+	};
+	
+	function clearPoints(){
+		map.clearOverlays();
+		vectorLayer.removeAllFeatures();
+		
+		// add grid all the time 
+		//createGrid();
+	};
+
+	function showPointsInGrid(point_fs){
+		var grid_index = getPointGridIndex(point_fs);
+		var points_in_grid = getPointsInGrid(grid_index);
+		showPoints(points_in_grid);
+	};
+	
+	function showPointsInRadius(point_fs,r){
+		var points_in_radius = getPointsInRadius_3Level(point_fs,r);
+		showPoints(points_in_radius);
+		
+		// output points count
+		document.getElementById('info').innerHTML= points_in_radius.length;	
+	}
+	
+	function clickBaiduMap(pt){
+		point_bd = pt;
+		centerFS(point_bd);
+	}
+	
+	function clickFSMap(pt){
+		point_fs = pt;
+		centerBaidu(point_fs);
+		/*
+		//showPointsInGrid(point_fs);
+		showPointsInRadius(point_fs,DEFAUL_RADIUS);
+		*/
+	}
+	
+	//==============================================================================
+	// output and save points
+	//==============================================================================
+	var current_fs_bd = [];
+	
+	function saveFSPoint(){
+		// reset point 
+		current_fs_bd = [];
+		current_fs_bd.push(point_fs.lon);
+		current_fs_bd.push(point_fs.lat);
+		
+		outputSaveProgress();
+	}
+	
+	function saveBaiduPoint(){
+		// save fs point first
+		if(current_fs_bd.length!=2){
+			alert("请先保存佛山坐标");
+			return;
+		}else if(current_fs_bd.length ==2){
+			current_fs_bd.push(point_bd.lng);
+			current_fs_bd.push(point_bd.lat);
+		
+			outputSaveProgress();
+		
+			// final save
+			point_pairs.push(current_fs_bd);
+			current_fs_bd = [];
+	
+			// show 
+			showPoints(point_pairs);
+		}
+	};
+	
+	function outputSaveProgress(){
+		var text = "";
+		if(current_fs_bd.length==2){
+			text = current_fs_bd[0]+","+current_fs_bd[1];
+		}else if(current_fs_bd.length==4){
+			text = current_fs_bd[0]+","+current_fs_bd[1]+","+current_fs_bd[2]+","+current_fs_bd[3];
+		}
+		document.getElementById('info').innerHTML= text;	
+	};
+	
+	function pointList2Str(point_pairs){
+		/*
+		[
+		[a,b,c,d],
+		[a,b,c,d],
+		];
+		
+		[[499522.99136213,2548898.4179421,113.009035,23.042472],[499554.04390487,2548723.448807,113.0079,23.040504],]
+		*/
+		var str = "";
+		str = "[";
+		point_pairs.forEach(function(p){
+			//console.log(p.length);
+			str +="[";
+			str += p[0]+","+p[1]+","+p[2]+","+p[3];
+			str +="],";
+		});
+		str +="]";
+		return str;
+	}
+
+	function outputPoints(){
+		var str = pointList2Str(point_pairs);
+		var title = point_pairs.length;
+		console.log("====================================");
+		console.log(str);
+		window.prompt(title, str);
+	}
+	
+	function savePoints(){
+		var str = pointList2Str(point_pairs);
+		var filename = "points.txt";
+		download(filename,str);
+	}
+	
+	function pointList2Str_ByField(i){
+		// i = 0,1,2,3
+		var str = "";
+		point_pairs.forEach(function(p){
+			str += p[i]+"\r\n";
+		});
+		return str;
+	}
+	
+	function saveField(){
+		//500609.09693615,2549401.6559681,113.01888,23.047282
+		// 0-2,1-3
+		for(var field = 0;field<4;field++){
+			var str = pointList2Str_ByField(field);
+			var filename = "points-"+field+".txt";
+			download(filename,str);
+		}
+	};
+	
+	//==============================================================================
+	// ui button events
+	//==============================================================================
+	document.getElementById("createGrid").onclick = function(){ 
+		zoomBaidu(13);
+		createGrid();
+	};
+	
+	document.getElementById("showPoints").onclick = function(){ 
+		showPoints(point_pairs);
+	};
+	
+	document.getElementById("outputPoints").onclick = function(){ 
+		outputPoints();
+	};
+	
+	document.getElementById("saveFSPoint").onclick = function(){ 
+		saveFSPoint();
+	};
+	document.getElementById("saveBaiduPoint").onclick = function(){ 
+		saveBaiduPoint();
+	};
+	
+	// save and load points
+	document.getElementById("savePoints").onclick = function(){ 
+		savePoints();
+	};
+	
+	document.getElementById("saveField").onclick = function(){ 
+		saveField();
+	};
+	
+	document.getElementById("showByGrid").onclick = function(){ 
+		showByGrid();
+	};
+	
+	document.getElementById("test").onclick = function(){ 
+		test();
+	};
+	//==============================================================================
+	// baidu map
+	//==============================================================================
+	// close defaut POI click event
+	var map = new BMap.Map("left",{enableMapClick:false});
+	map.centerAndZoom(point_bd,level_bd);
+	map.setCurrentCity("佛山市");
+
+	map.setMapType(BMAP_HYBRID_MAP);
+	//map.setMapType(BMAP_SATELLITE_MAP);
+	//map.setMapType(BMAP_NORMAL_MAP);
+
+	map.addControl(new BMap.NavigationControl());           
+	map.addControl(new BMap.MapTypeControl());  	
+	map.enableScrollWheelZoom(true);                           
+	map.disable3DBuilding();
+	map.setDefaultCursor("crosshair"); 
+
+	map.addEventListener("click",function(e){
+		clickBaiduMap(e.point);
+	});
+	
+	map.addEventListener("zoomend",function(e){
+		console.log("zoomend");
+		var newlevel_bd = e.target.Ga; // map level
+		zoomBaidu(newlevel_bd);
+	});
+	
+	map.addEventListener("moveend",function(e){
+		console.log("moveend");
+		moveBaiduMap();
+	});
+	
+	function moveBaiduMap(){
+		point_bd = map.getCenter();
+		
+		// move fs map by baidu center
+		point_fs = baidu_to_fs2(point_bd);
+		fsmap.setCenter(point_fs, level_fs);
+	}
+	
+	function zoomBaidu(newlevel_bd){
+		// update FS level
+		level_fs = newlevel_bd - level_bd + level_fs;
+		
+		// update Baidu level
+		level_bd = newlevel_bd;
+
+		// update map
+		map.centerAndZoom(point_bd,level_bd);
+		fsmap.setCenter(point_fs, level_fs);
+	}
+	
+	function centerFS(point_bd){
+		// clear points
+		clearPoints();
+		
+		// baidu
+		addBaiduPoint(point_bd);
+		
+		// fs
+		//point_fs = baidu_to_fs2(point_bd);
+		point_fs = baidu2fs(point_bd); // USE NEW VERSION
+		fsmap.setCenter(point_fs, level_fs);
+		addFSPoint(new OpenLayers.LonLat(point_fs.lon,point_fs.lat));
+	
+		// output points		
+		output2Point(point_bd,point_fs);
+	}
+	
+	function centerBaidu(point_fs){
+		// clear points
+		clearPoints();
+		
+		// fs
+		addFSPoint(new OpenLayers.LonLat(point_fs.lon,point_fs.lat));
+		
+		// baidu
+		//point_bd = fs2baidu(point_fs);
+		point_bd = fs2baidu(point_fs); // USE NEW VERSION
+		map.centerAndZoom(point_bd,level_bd);
+		addBaiduPoint(point_bd);
+		
+		// output points
+		output2Point(point_bd,point_fs);
+	}
+	
+	function output2Point(point_bd,point_fs){
+		//return;
+		var text_bd = point_bd.lng + "," + point_bd.lat; // lng, lat
+		document.getElementById('bd').innerHTML= text_bd;	
+		
+		var text_fs = point_fs.lon + "," + point_fs.lat; // lon, lat
+		document.getElementById('fs').innerHTML= text_fs;	
+	}
+	
+	//==============================================================================
+	// fs map
+	//==============================================================================
+	
+	//Proj4js.defs["CUSTOM:FOSHAN113"] = "+proj=tmerc +ellps=IAU76 +lat_0=-0.000389 +lon_0=113.000750 +k=1 +x_0=500000 +y_0=0 +units=m +no_defs";
+	//Proj4js.defs["CUSTOM:FOSHAN113"] = "+proj=tmerc +a=6378140 +b=6356755.288157528 +lat_0=-0.000131 +lon_0=113.001025 +k=1 +x_0=500000 +y_0=0 +units=m +no_defs";
+	Proj4js.defs["CUSTOM:FOSHAN113"] = "+proj=tmerc +ellps=IAU76 +lat_0=-0.000131 +lon_0=113.001025 +k=1 +x_0=500000 +y_0=0 +units=m +no_defs";
+	
+	// xian 3-degree 114
+	Proj4js.defs["EPSG:2383"] = "+proj=tmerc +lat_0=0 +lon_0=114 +k=1 +x_0=500000 +y_0=0 +a=6378140 +b=6356755.288157528 +units=m +no_defs";
+	// wgs84
+	Proj4js.defs["EPSG:4326"] = "+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs";
+	
+	var fs_proj = new OpenLayers.Projection("CUSTOM:FOSHAN113");
+	var wgs_proj = new OpenLayers.Projection("EPSG:4326");
+	var xian_proj = new OpenLayers.Projection("EPSG:2383");
+	// vector layer
+	var vectorLayer = new OpenLayers.Layer.Vector("Point Layer");
+	
+	var customPyramid = {
+		name : "customPyramid",//金字塔名称
+		topLevelIndex : 0,//层之间比例关系-顶层层数
+		bottomLevelIndex : 20,//层之间比例关系-最底层层数
+		scaleX : 2,//层之间比例关系-X方向倍数
+		scaleY :2,//层之间比例关系-Y方向倍数	
+		topTileFromX : -20037508.3427892,//顶层第一个瓦片的范围FromX
+		topTileFromY : 20037508.3427892,//顶层第一个瓦片的范围FromY
+		topTileToX : 20037508.3427892,//顶层第一个瓦片的范围ToX
+		topTileToY : -20037508.3427892,//顶层第一个瓦片的范围ToY
+		tileSize : new Geo.Size(256,256),//单个瓦片信息-宽度和高度
+		originRowIndex : 0,//单个瓦片信息-行起始索引
+		originColIndex : 0,//单个瓦片信息-列起始索引
+		units:"m",//平面坐标值单位为m
+		maxExtent : new Geo.Bounds(-20037508.3427892, -20037508.3427892, 20037508.3427892, 20037508.3427892)//数据范围描述
+	};
+	var options = {
+		units: "m",//地图单位
+		pyramid:new Geo.Pyramid(customPyramid),//地图金字塔
+		//配置-Proj4js.defs["CUSTOM:FOSHAN113"]-后,开启下面2个才会显示经纬度.否则,仍旧是地图金字塔定义的.
+		projection: fs_proj
+		/*
+		,//地图投影
+		displayProjection: wgs_proj//地图显示投影
+		*/
+	}
+	var fsmap = new Geo.View2D.Map("right", options);
+	fsmap.addControl(new OpenLayers.Control.MousePosition());
+	
+	function getRes(scales) {
+		var res = [];
+		var scaleStr = scales.split(",");
+		for(var i = 0, j = scaleStr.length; i < j;i++) {
+			res.push(fsmap.pyramid.getResolutionForScale(parseFloat(scaleStr[i])));
+		}
+		return res;
+	}
+	
+	//1-矢量
+	var fsRes = getRes("72223.96373402483,36111.981867012415,18055.990933506208,9027.995466753104,4513.997733376552,2256.998866688276,1128.499433344138,564.249716672069");
+	var fslayer = new Geo.View2D.Layer.WMTS({
+		name : "CCGTMAP15_20",
+		url :  "http://19.133.29.238:7002/CCGTMAP13_20/wmts",
+		matrixSet: "Matrix_0",
+		style : "CCGTMAP15_20",
+		layer : "CCGTMAP15_20",
+		resolutions: fsRes,
+		format : "image/tile",
+		zoomOffset: 13,//地图偏移量
+		maxResolution :fsRes[0],//最大分辨率
+		minResolution :fsRes[fsRes.length - 1],//最小分辨率
+		tileFullExtent:Geo.Bounds.fromString("494043.57239999995,2535990.899700001,518379.2123999996,2552105.0396999996")
+	});
+	//2-影像
+	var fsRes_yx = getRes("72223.96373402483,36111.981867012415,18055.990933506208,9027.995466753104,4513.997733376552,2256.998866688276,1128.499433344138,564.249716672069");
+	var fslayer_yx = new Geo.View2D.Layer.WMTS({
+		name : "CCGTWP2015",
+		url :  "http://19.133.29.238:7002/CCGTWP2015/wmts",
+		matrixSet: "Matrix_0",
+		style : "CCGTWP2015",
+		layer : "CCGTWP2015",
+		resolutions: fsRes_yx,
+		format : "image/tile",
+		zoomOffset: 13,//地图偏移量
+		maxResolution :fsRes_yx[0],//最大分辨率
+		minResolution :fsRes_yx[fsRes_yx.length - 1],//最小分辨率
+		tileFullExtent:Geo.Bounds.fromString("495626.68421803735,2534378.9967090613,518629.3342180374,2553836.8967090617")
+	});
+	//3-2.5d
+	var fsRes_25d = getRes("72223.96373402483,36111.981867012415,18055.990933506208,9027.995466753104,4513.997733376552,2256.998866688276,1128.499433344138,564.249716672069");
+	var fslayer_25d = new Geo.View2D.Layer.WMTS({
+		name : "CCGTFZH2013",
+		url :  "http://19.133.29.238:7002/CCGTFZH2013/wmts",
+		matrixSet: "Matrix_0",
+		style : "CCGTFZH2013",
+		layer : "CCGTFZH2013",
+		resolutions: fsRes_25d,
+		format : "image/tile",
+		zoomOffset: 13,//地图偏移量
+		maxResolution :fsRes_25d[0],//最大分辨率
+		minResolution :fsRes_25d[fsRes_25d.length - 1],//最小分辨率
+		tileFullExtent:Geo.Bounds.fromString("496117.80467445566,2535231.9442850314,517781.26885500166,2552716.944999657")
+	});
+	
+	// map click
+	var ctrlDrawPoint = new Geo.View2D.Control.DrawPoint({
+		curView:this,
+		id:"openlayer_specialOverlayPointClickControl",
+		persist:false,
+		done:function(geometry){
+			var pt = {lon:geometry.x,lat:geometry.y};//evt.object.getLonLatFromLayerPx(evt.xy);
+			clickFSMap(pt);
+		}
+	});
+	fsmap.addControl(ctrlDrawPoint);
+	ctrlDrawPoint.activate();
+	
+	//fsmap.addLayers([fslayer,vectorLayer]); // vector
+	fsmap.addLayers([fslayer_yx,vectorLayer]); // image
+	//fsmap.addLayers([fslayer_25d,vectorLayer]); // image25d
+	fsmap.setCenter(point_fs, level_fs);
+	//addFSPoint(point_fs);
+
+	// init map
+	//createGrid();
+	
+	function test_diff(){
+		// (113.094244-113.094266)*111000*0.92*1.4 = 3
+		
+		// zumiao
+		// (113.099904-113.09991274402083)*111000*0.92 = -0.8925288
+		// (113.119749-113.11969556553315)*111000*0.92 = 5.45673114
+		// (113.134114-113.1340977)*111000*0.92 = 1.664556
+		// (113.104508-113.10447717)*111000*0.92 =  3.1483596
+		
+		// nanzhuang
+		// (113.035021-113.0349679)*111000*0.92 =  5.422572
+		// (113.055441-113.0554507)*111000*0.92 =  -0.990564
+		// (113.054755-113.05475699)*111000*0.92 =  -0.2032188
+		// (113.029636-113.02964732)*111000*0.92 = -1.1559984
+		
+		// shiwan
+		// (113.083459-113.083473562)*111000*0.92 =  -1.4870714
+		// (113.070215-113.07023211)*111000*0.92 = -1.7472732
+		// (113.068611-113.068633779)*111000*0.92 = -2.3261915
+		// (113.077662-113.077675549)*111000*0.92  -1.3836239
+		
+		//  you xia 
+		// (113.127924-113.127893737)*111000*0.92 =  3.09045756
+		// (113.130433-113.1304073277)*111000*0.92 =  2.6216553
+		// (113.103611-113.103513555)*111000*0.92 = 9.9510834
+		// (113.128532-113.128540395)*111000*0.92 = -0.8572974
+	};
+</script>

@@ -1,0 +1,4 @@
+attrib +s +h D:\Workspace
+attrib +s +h D:\pc
+
+attrib -s -h D:\folder

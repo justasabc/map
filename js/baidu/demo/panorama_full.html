@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <meta name="viewport" content="initial-scale=1.0, user-scalable=no" />
+  <style type="text/css">
+    body, html{width: 100%;height: 100%;margin:0;font-family:"微软雅黑";}
+    #panorama {width:100%; height: 500px;}
+    #result {width:100%;font-size:12px;}
+  </style>
+  <script type="text/javascript" src="http://api.map.baidu.com/api?v=2.0&ak=627348740657010a651a38fd51ac075c"></script>
+  <title>Show/Hide Navbar</title>
+</head>
+<body>
+  <div id="panorama"></div>
+  <div id="result">
+    <button id="hideNavigationControl">Hide</button>
+    <button id="showNavigationControl">Show</button>
+  </div>
+  <div id="svInfoText"></div>
+  <div id="svInfoText2"></div>
+</body>
+</html>
+<script type="text/javascript">
+  var panorama = new BMap.Panorama('panorama'); //默认为显示导航控件 
+  panorama.setPosition(new BMap.Point(116.316169, 40.005567));
+  //panorama.setId('0100010000130501122416015Z1');//根据全景id展示全景图
+
+  panorama.addEventListener('position_changed', function(e){ //全景位置改变事件
+	   panoramaCallBack(e);
+	});
+	
+	panorama.addEventListener('pov_changed', function(e){ //全景视角改变事件
+		panoramaCallBack(e);
+	});
+	
+	function panoramaCallBack(e){ //事件回调函数
+		if (e.type == 'onpov_changed') { 
+			document.getElementById('svInfoText').innerHTML="heading "+panorama.getPov().heading+"<br/>pitch "+panorama.getPov().pitch;
+		}
+		else if (e.type=='onposition_changed') {
+			document.getElementById('svInfoText').innerHTML="pos "+panorama.getPosition().lng+","+panorama.getPosition().lat;
+		}
+	}
+  
+  panorama.setOptions({
+    albumsControlOptions: {
+          anchor: BMAP_ANCHOR_TOP_RIGHT,    //设置相册位置为右上角
+		  offset: new BMap.Size(100, 15),  //设置偏移量，距离上面15px，距离左边100px（距离那边受anchor位置的影响）
+		  maxWidth: '60%',    //设置相册的长度和图片大小,相册的最大宽度为60%，相册内图片的大小为80px
+          imageHeight: 80
+      }
+  });
+  
+  var panoramaService = new BMap.PanoramaService();
+	panoramaService.getPanoramaByLocation(new BMap.Point(120.31, 31.58), function(data){
+		var panoramaInfo="";
+		if (data == null) {
+				console.log('no data');
+				return;
+			}
+		panoramaInfo +='全景id为：'+data.id+'\n';
+		panoramaInfo +='<br/>全景路段名为：'+data.description+'\n';
+		panoramaInfo +='<br/>坐标为：'+data.position.lng+':'+data.position.lat+'\n';
+		document.getElementById('svInfoText2').innerHTML= panoramaInfo;
+	});
+  
+  document.getElementById("hideNavigationControl").onclick = function(){ 
+    panorama.setOptions({
+      navigationControl: false, //隐藏导航控件
+	  linksControl: false, //隐藏道路指示控件
+	  albumsControl: false //默认为不显示相册控件，默认值为false
+    });
+  };
+  document.getElementById("showNavigationControl").onclick = function(){ 
+    panorama.setOptions({
+      navigationControl: true, //显示导航控件
+	  linksControl: true, //显示道路指示控件
+	  albumsControl: true //默认为不显示相册控件，默认值为false
+    });
+  };
+</script>
+

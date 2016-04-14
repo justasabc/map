@@ -1,0 +1,366 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+	<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+	<title>FS MAP</title>
+	<script src="geo/jquery-1.7.2.min.js"></script>
+	<script src="geo/proj4js-compressed.js"></script>
+	<script src="geo/OpenLayers/OpenLayers-debug.js"></script>
+	<script src="geo/GeoGlobeJS.debug.js"></script>
+	<style>
+		body {
+			margin: 0;
+		}
+		#simpleMap {
+			width: 100%;
+			height: 600px;
+			border-bottom: 1px solid #a9a9a9;
+		}
+		#coordTrans {
+			margin-top: 10px;
+		}
+		#coordTrans div {
+			margin: 5px 0;
+		}
+		#coordTrans span {
+			display: inline-block;
+			width: 100px;
+			margin-left: 20px;
+		}
+	</style>
+</head>
+<body>
+<!--
+	<div id="simpleMap"></div>
+	-->
+	
+	<div id="left"></div>
+	<div id="simpleMap"></div>
+	<div id="result">
+		<button id="show">show</button>
+		<button id="hide">hide</button>
+	</div>
+	<div id="info"></div>
+	<script>
+		/*
+		http://www.cnblogs.com/sailheart/archive/2011/03/11/1981536.html
+		http://blog.sina.com.cn/s/blog_6e0b57710101p7yk.html
+		http://www.cehui8.com/lunwen/jichu/20131224/1587.html
+		http://blog.csdn.net/feg545/article/details/44775697
+		http://blog.csdn.net/wangpei421/article/details/29568869
+		http://tian0226.blog.sohu.com/142843049.html
+		
+		
+		我国参照前苏联从1953年起采用克拉索夫斯基(Krassovsky)椭球体建立了我国的北京54坐标系，
+		1978年采用国际大地测量协会推荐的IAG 75地球椭球体建立了我国新的大地坐标系--西安80坐标系， 
+		目前GPS定位所得出的结果都属于WGS84坐标系统，WGS84基准面采用WGS84椭球体
+		
+		http://blog.sina.com.cn/s/blog_764b1e9d0100pqfm.html
+		http://wenku.baidu.com/link?url=hkKv2kJughGtpJQ1Y3RBtNNIDsd1hzHeWtwkxcitco7gzHGvbDdtP4zwdKdy_qNX2qdxWzlY39xc9sdPwyDgm3FKxaCHEHMCJCNog5Ryfc3
+		http://wenku.baidu.com/link?url=jDeeunPq7He7CpPaS9fYMo26_6o6Vc-V_7NpGgl43TQ9oTigPJxdMnhoNKHAynMA8gECGVg0VnP3BYqqDNHTbccMypHn2KJUoUbltzQZFSe
+		http://blog.163.com/gaoshan_rs/blog/static/21547905020129811550809/
+		http://wenku.baidu.com/link?url=BwQVhQd7SQxVoNqr_FHX6JYFyVVfTxa17UJE_3Rn0UjnTvjS8nfFCecCU8yVOfJpgLWgSHIUpgORRKmlHm_0jv_ciHeqf2vNtexjpfT_CZm
+		椭球体(Ellipsoid)
+		beijing54   Krassovsky 6378245  6356863.0188           +ellps=krass  
+		xian80      IAG75     6378140  6356755.2882  （here）  +ellps=IAU76
+		CGCS2000          	  6378137  6356752.314140356       +ellps=GRS80
+		
+		wgs84       WGS84     6378137  6356752.3142            +ellps=WGS84
+		
+		目前我国普遍采用的是高斯——克吕格投影，在英美国家称为横轴墨卡托投影（Transverse Mercator）。
+		高斯克吕格投影的中央经线和赤道为互相垂直，分带标准分为3度带和6度带。
+		美国编制世界各地军用地图和地球资源卫星像片所采用的全球横轴墨卡托投影（UTM）是横轴墨卡托投影的一种变型。
+		高斯克吕格投影的中央经线长度比等于1，UTM投影规定中央经线长度比为0.9996。
+		
+		投影proj
+		+proj=aea   Albers
+		+proj＝lcc  Lambert兰伯特投影
+		
+		+proj＝merc  墨卡托投影 Mercator
+		
+		+proj=utm   UTM投影 (Universal Transverse Mercator Projection通用横轴墨卡托投影)
+		+proj＝tmerc Gauss－Kruger投影 (我国主要使用高斯——克吕格投影，在英美国家称为横轴墨卡托投影（Transverse Mercator）)
+		
+		+proj=longlat
+	
+		UTM投影与高斯---克吕格投影的异同两者都是横轴墨卡托投影（Transverse Mercator）的变种。
+		
+		
+		
+		如下定义了一个北京54的墨卡托投影，也就是国内常见的高斯投影，中央经度为：+lon_0=116.35025181e
+		"+proj=tmerc +ellps=krass +lon_0=116.35025181e +lat_0=39.86576583n +k=1.0 +x_0=500000 +y_0=000000 +units=m +towgs84=22,-118,30.5,0,0,0,0";
+		
+		
+		Proj4js.defs["CUSTOM:FOSHAN113"] = "+proj=tmerc +a=6378140 +b=6356755.288157528 
+		+lat_0=-0.000389 +lon_0=113.000750 +k=1
+		+x_0=500000 +y_0=0
+		+units=m +no_defs";
+		
+		得先看看你的矢量数据本身的坐标值才能做决定，是经纬度的值还是公里网的值，抑或是局部坐标的值？
+		只有这样才能决定采用什么投影和坐标系，而不能胡乱使用。
+		
+		北京54
+		西安80
+		国家2000
+		WGS84经纬度
+		佛山独立坐标系
+		
+		http://wenku.baidu.com/link?url=alUoUugBbnzbuIauHsAadSfBrSOv5R-d51CcysgLGaZLpowhzqA9BpaTdc_GXOXFa-Ipv5k5HvE16HMw-k13X-vUYlHdAvXG4CWlLsnwHAi
+		
+		中央子午线
+		113.29505555555555
+		
+		
+		广州市位于西安80，高斯——克吕格3度投影带的第38带。  3*38=114E
+		EPSG:2383
+		http://spatialreference.org/ref/epsg/2383/esriwkt/
+		http://spatialreference.org/ref/epsg/2383/proj4js/
+		*/
+	
+		//涉及到"坐标转换"的有参考
+		//定义“佛山“平面坐标系的投影金字塔
+		//Proj4js.defs["CUSTOM:FOSHAN113"] = "+proj=tmerc +ellps=IAU76 +lat_0=-0.000389 +lon_0=113.000750 +k=1 +x_0=500000 +y_0=0 +units=m +no_defs";
+		//Proj4js.defs["CUSTOM:FOSHAN113"] = "+proj=tmerc +a=6378140 +b=6356755.288157528 +lat_0=-0.000131 +lon_0=113.001025 +k=1 +x_0=500000 +y_0=0 +units=m +no_defs";
+		Proj4js.defs["CUSTOM:FOSHAN113"] = "+proj=tmerc +ellps=IAU76 +lat_0=-0.000131 +lon_0=113.001025 +k=1 +x_0=500000 +y_0=0 +units=m +no_defs";
+		
+		// xian 3-degree 114
+		Proj4js.defs["EPSG:2383"] = "+proj=tmerc +lat_0=0 +lon_0=114 +k=1 +x_0=500000 +y_0=0 +a=6378140 +b=6356755.288157528 +units=m +no_defs";
+		// wgs84
+		Proj4js.defs["EPSG:4326"] = "+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs";
+		
+		var fs_proj = new OpenLayers.Projection("CUSTOM:FOSHAN113");
+		var wgs_proj = new OpenLayers.Projection("EPSG:4326");
+		var xian_proj = new OpenLayers.Projection("EPSG:2383");
+		// vector layer
+		var vectorLayer = new OpenLayers.Layer.Vector("Point Layer");
+		// level 0-7
+		var level = 0;
+		
+		var addPoint = function(point){
+			//console.log(point);
+			//point.transform(wgs_proj,fs_proj);
+			//console.log(point);
+			
+			var newpoint = new Geo.Geometry.Point(point.lon,point.lat);
+			var pointFeature = new Geo.Feature.Vector(newpoint);
+			vectorLayer.addFeatures([pointFeature]);
+		};
+		
+		//1) wgs84---fs
+		//var point = new OpenLayers.LonLat(113.101873,23.029604);
+		//addPoint(point);  /* lat: 2547835.2998046526   lon: 510336.9451766819 */
+		
+		var points_baidu = [
+		{lon:113.114845,lat:23.032571},
+		{lon:113.100185,lat:23.021841},
+		{lon:113.140856,lat:23.007113},
+		{lon:113.097584,lat:22.983095},
+		{lon:113.052525,lat:23.007226},
+		{lon: 113.118754,lat: 23.03278}, // 祖庙
+		
+		{lon: 113.087663,lat: 23.002561} //石南大桥
+		
+		];
+		var points_fs = [
+		{lon:510416,lat:2547807},
+		{lon:508911,lat:2546614},
+		{lon:513096,lat:2544941},
+		{lon:508665,lat:2542312},
+		{lon:504060,lat:2544928},
+		{lon:510858,lat:2547821},     // 祖庙
+		{lon:507599,lat:2544470}      //石南大桥
+		];
+		
+		var area_points = {
+    'nanzhuang':{
+        lng:113.02824, lat:22.998061
+    },
+    'zumiao':{
+        lng:113.120249, lat:23.032702
+    },
+    'zhangcuo':{
+        lng:113.0914, lat:23.04280
+    },
+    'shiwan':{
+        lng:113.104894, lat:23.005772
+    }
+};
+		
+		// for each data to add points to map
+		points_fs.forEach(function(p){
+			addPoint(new OpenLayers.LonLat(p.lon,p.lat));
+		})
+		
+		var baidu_to_fs = function(lon,lat){
+			//{lon:113.114845,lat:23.032571}, ----->{lon:510416,lat:2547807}
+			var fs_lon = 102244*lon - 1E+07; // x
+			var fs_lat = 111289*lat - 15474; // y
+			return {lon:fs_lon,lat:fs_lat};
+		};
+		
+		/*
+		var data = 
+		[{"lng":113.06,"lat":23.0015,"count":7},
+		{"lng":113.06,"lat":23.0018,"count":1},
+		{"lng":113.06,"lat":23.0019,"count":11},
+		{"lng":113.06,"lat":23.0021,"count":13},
+		{"lng":113.06,"lat":23.0022,"count":14},
+		{"lng":113.06,"lat":23.0023,"count":14},
+		{"lng":113.06,"lat":23.0028,"count":10},
+		{"lng":113.06,"lat":23.0036,"count":14},
+		{"lng":113.06,"lat":23.0039,"count":6},
+		{"lng":113.06,"lat":23.004,"count":24},
+		];
+		
+		data.forEach(function(p){
+			addPoint(new OpenLayers.LonLat(p.lon,p.lat));
+		})
+		*/
+		
+		
+		// get json data
+		var data_url = "./data/data_10.json";
+		var data_url = "./data/data_full.json";
+		/*
+        $.ajax({       
+            type:"GET",       
+            url:data_url,
+            dataType:"json",       
+            success: function (data) {            
+                $.each(data, function(i,p){  
+					//var point = new OpenLayers.LonLat(113.101873,23.029604);
+					var point = new OpenLayers.LonLat(p.lng,p.lat);
+					point.transform(wgs_proj,fs_proj);
+					console.log(i);
+				
+					var newpoint = new Geo.Geometry.Point(point.lon,point.lat);
+					var pointFeature = new Geo.Feature.Vector(newpoint);
+					vectorLayer.addFeatures([pointFeature]);
+                });
+            },
+            error: function (data) {
+				console.log("error");			
+                console.log(data);
+            }
+        });  
+		*/
+		
+		/*
+		$.get(data_url,function(data){
+			console.log("ok");
+			console.log(data);
+			data.forEach(function(p){
+				//var point = new OpenLayers.LonLat(113.101873,23.029604);
+				var point = new OpenLayers.LonLat(p.lng,p.lat);
+				point.transform(wgs_proj,fs_proj);
+				console.log(point);
+			
+				var newpoint = new Geo.Geometry.Point(point.lon,point.lat);
+				var pointFeature = new Geo.Feature.Vector(newpoint);
+				vectorLayer.addFeatures([pointFeature]);
+			});
+		});
+		*/
+		
+		
+		/*
+		
+		*/
+		
+		var customPyramid = {
+			name : "customPyramid",//金字塔名称
+			topLevelIndex : 0,//层之间比例关系-顶层层数
+			bottomLevelIndex : 20,//层之间比例关系-最底层层数
+			scaleX : 2,//层之间比例关系-X方向倍数
+			scaleY :2,//层之间比例关系-Y方向倍数	
+			topTileFromX : -20037508.3427892,//顶层第一个瓦片的范围FromX
+			topTileFromY : 20037508.3427892,//顶层第一个瓦片的范围FromY
+			topTileToX : 20037508.3427892,//顶层第一个瓦片的范围ToX
+			topTileToY : -20037508.3427892,//顶层第一个瓦片的范围ToY
+			tileSize : new Geo.Size(256,256),//单个瓦片信息-宽度和高度
+			originRowIndex : 0,//单个瓦片信息-行起始索引
+			originColIndex : 0,//单个瓦片信息-列起始索引
+			units:"m",//平面坐标值单位为m
+			maxExtent : new Geo.Bounds(-20037508.3427892, -20037508.3427892, 20037508.3427892, 20037508.3427892)//数据范围描述
+		};
+		var options = {
+			units: "m",//地图单位
+			pyramid:new Geo.Pyramid(customPyramid),//地图金字塔
+			//配置-Proj4js.defs["CUSTOM:FOSHAN113"]-后,开启下面2个才会显示经纬度.否则,仍旧是地图金字塔定义的.
+			projection: fs_proj
+			/*
+			,//地图投影
+			displayProjection: wgs_proj//地图显示投影
+			*/
+		}
+		//构造地图对象实例,并添加到id为simpleMap的div容器中
+		var map = new Geo.View2D.Map("simpleMap", options);
+		map.addControl(new OpenLayers.Control.MousePosition());
+		
+		//比例尺转分辨率
+		function getRes(scales) {
+			var res = [];
+			var scaleStr = scales.split(",");
+			for(var i = 0, j = scaleStr.length; i < j;i++) {
+				res.push(map.pyramid.getResolutionForScale(parseFloat(scaleStr[i])));
+			}
+			return res;
+		}
+		
+		//1-矢量
+		var fsRes = getRes("72223.96373402483,36111.981867012415,18055.990933506208,9027.995466753104,4513.997733376552,2256.998866688276,1128.499433344138,564.249716672069");
+		var fslayer = new Geo.View2D.Layer.WMTS({
+			name : "CCGTMAP15_20",
+			url :  "http://19.133.29.238:7002/CCGTMAP13_20/wmts",
+			matrixSet: "Matrix_0",
+			style : "CCGTMAP15_20",
+			layer : "CCGTMAP15_20",
+			resolutions: fsRes,
+			format : "image/tile",
+			zoomOffset: 13,//地图偏移量
+			maxResolution :fsRes[0],//最大分辨率
+			minResolution :fsRes[fsRes.length - 1],//最小分辨率
+			tileFullExtent:Geo.Bounds.fromString("494043.57239999995,2535990.899700001,518379.2123999996,2552105.0396999996")
+		});
+		//2-影像
+		var fsRes_yx = getRes("72223.96373402483,36111.981867012415,18055.990933506208,9027.995466753104,4513.997733376552,2256.998866688276,1128.499433344138,564.249716672069");
+		var fslayer_yx = new Geo.View2D.Layer.WMTS({
+			name : "CCGTWP2015",
+			url :  "http://19.133.29.238:7002/CCGTWP2015/wmts",
+			matrixSet: "Matrix_0",
+			style : "CCGTWP2015",
+			layer : "CCGTWP2015",
+			resolutions: fsRes_yx,
+			format : "image/tile",
+			zoomOffset: 13,//地图偏移量
+			maxResolution :fsRes_yx[0],//最大分辨率
+			minResolution :fsRes_yx[fsRes_yx.length - 1],//最小分辨率
+			tileFullExtent:Geo.Bounds.fromString("495626.68421803735,2534378.9967090613,518629.3342180374,2553836.8967090617")
+		});
+		//3-2.5d
+		var fsRes_25d = getRes("72223.96373402483,36111.981867012415,18055.990933506208,9027.995466753104,4513.997733376552,2256.998866688276,1128.499433344138,564.249716672069");
+		var fslayer_25d = new Geo.View2D.Layer.WMTS({
+			name : "CCGTFZH2013",
+			url :  "http://19.133.29.238:7002/CCGTFZH2013/wmts",
+			matrixSet: "Matrix_0",
+			style : "CCGTFZH2013",
+			layer : "CCGTFZH2013",
+			resolutions: fsRes_25d,
+			format : "image/tile",
+			zoomOffset: 13,//地图偏移量
+			maxResolution :fsRes_25d[0],//最大分辨率
+			minResolution :fsRes_25d[fsRes_25d.length - 1],//最小分辨率
+			tileFullExtent:Geo.Bounds.fromString("496117.80467445566,2535231.9442850314,517781.26885500166,2552716.944999657")
+		});
+		
+		//加载矢量
+		//map.addLayers([fslayer]);
+		//加载影像
+		//map.addLayers([fslayer_yx]);
+		//加载2.5d
+		map.addLayers([fslayer_yx,vectorLayer]);
+		map.setCenter(new Geo.LonLat(504571,2541766.5), 0);
+		
+	</script>
+</body>
+</html>

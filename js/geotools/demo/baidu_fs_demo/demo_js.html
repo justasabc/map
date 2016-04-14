@@ -1,0 +1,27 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+	<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+	<title>DEMO USAGE</title>
+	
+	<script src="js/PointUtil.min.js"></script>
+</head>
+<body>
+	<script>	
+	function test_demo(){
+		// [500609.09693615,2549401.6559681,113.01888,23.047282]
+		var point_bd = {lon:113.01888,lat:23.047282};
+		var point_fs = {lon:500609.09693615,lat:2549401.6559681};
+		
+		// 2 methods demo
+		var pt_fs = baidu_to_fs_allInOne(point_bd);
+		var pt_bd = fs_to_baidu_allInOne(point_fs);
+		
+		alert(pt_fs.lon+","+pt_fs.lat);
+		alert(pt_bd.lon+","+pt_bd.lat);
+	};
+	test_demo();
+	
+	</script>
+</body>
+</html>

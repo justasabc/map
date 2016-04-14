@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+	<meta name="viewport" content="initial-scale=1.0, user-scalable=no" />
+	<style type="text/css">
+	body, html{width: 100%;height: 100%;margin:0;font-family:"Î¢ÈíÑÅºÚ";}
+	#allmap {width: 100%; height:500px; overflow: hidden;}
+	#result {width:100%;font-size:12px;}
+	dl,dt,dd,ul,li{
+		margin:0;
+		padding:0;
+		list-style:none;
+	}
+	p{font-size:12px;}
+	dt{
+		font-size:14px;
+		font-family:"Î¢ÈíÑÅºÚ";
+		font-weight:bold;
+		border-bottom:1px dotted #000;
+		padding:5px 0 5px 5px;
+		margin:5px 0;
+	}
+	dd{
+		padding:5px 0 0 5px;
+	}
+	li{
+		line-height:28px;
+	}
+	</style>
+	<script type="text/javascript" src="http://api.map.baidu.com/api?v=2.0&ak=627348740657010a651a38fd51ac075c"></script>
+	<!--drawing manager-->
+	<script type="text/javascript" src="http://api.map.baidu.com/library/DrawingManager/1.4/src/DrawingManager_min.js"></script>
+	<link rel="stylesheet" href="http://api.map.baidu.com/library/DrawingManager/1.4/src/DrawingManager_min.css" />
+	<!-- search info window-->
+	<script type="text/javascript" src="http://api.map.baidu.com/library/SearchInfoWindow/1.4/src/SearchInfoWindow_min.js"></script>
+	<link rel="stylesheet" href="http://api.map.baidu.com/library/SearchInfoWindow/1.4/src/SearchInfoWindow_min.css" />
+	<title>Drawing Tool</title>
+</head>
+<body>
+	<div id="allmap" style="overflow:hidden;zoom:1;position:relative;">	
+		<div id="map" style="height:100%;-webkit-transition: all 0.5s ease-in-out;transition: all 0.5s ease-in-out;"></div>
+	</div>
+	<div id="result">
+		<input type="button" value="count" onclick="alert(overlays.length)"/>
+		<input type="button" value="clear" onclick="clearAll()"/>
+	</div>
+	<script type="text/javascript">
+	var level = 16;
+	var map = new BMap.Map("map",{enableMapClick:false}); 
+	var point = new BMap.Point(113.117925,23.032699);
+	map.centerAndZoom(point,level);
+	map.setCurrentCity("ä½›å±±å¸‚");
+	
+	//map.setMapType(BMAP_HYBRID_MAP);
+	//map.setMapType(BMAP_SATELLITE_MAP);
+	map.setMapType(BMAP_NORMAL_MAP);
+	
+	map.addControl(new BMap.NavigationControl());           
+	map.addControl(new BMap.MapTypeControl());  	
+	map.enableScrollWheelZoom(true);                           
+	map.disable3DBuilding();
+	
+	/*
+	var style = 'midnight';  // normal midnight
+	map.setMapStyle({style:style});
+	*/
+	
+	 function clearAll() {
+		for(var i = 0; i < overlays.length; i++){
+            map.removeOverlay(overlays[i]);
+        }
+        overlays.length = 0;   
+    }
+	
+	//========================================================================
+	// drawing tool
+	//========================================================================
+	// store overlays
+	var overlays = []; // store all overlays
+	var overlaycomplete = function(e){
+		console.log("---overlaycomplete---");
+		overlays.push(e.overlay);
+		console.log(e.drawingMode);
+		if(e.drawingMode=="marker"){
+			var point = e.overlay.point;
+		}else if(e.drawingMode=="circle"){
+			var point = e.overlay.point;
+			var radius = e.overlay.wa;  // radius
+		}else if(e.drawingMode=="polyline"){
+			var polyline = e.overlay.ia ; // [p1,p2,p3,p4]
+		}else if(e.drawingMode=="polygon"){
+			var polygon = e.overlay.ia ; // [p1,p2,p3,p1]
+		}else if(e.drawingMode=="rectangle"){
+			var rectangle = e.overlay.ia ; // [p1,p2,p3,p4,p1]
+		}
+    };
+	
+	/*
+	var markercomplete = function(e){
+		console.log("markercomplete");
+    };
+	var circlecomplete = function(e){
+		console.log("circlecomplete");
+    };
+	var polylinecomplete = function(e){
+		console.log("polylinecomplete");
+    };
+	var polygoncomplete = function(e){
+		console.log("polygoncomplete");
+    };
+	var rectanglecomplete = function(e){
+		console.log("rectanglecomplete");
+    };
+	*/
+	
+	var styleOptions = {
+        strokeColor:"red",    
+        fillColor:"yellow",
+        strokeWeight: 3,      
+        strokeOpacity: 0.8,	  
+        fillOpacity: 0.6,     
+        strokeStyle: 'solid' 
+    };
+
+    // drawing manager
+    var drawingManager = new BMapLib.DrawingManager(map, {
+        isOpen: false, 
+        enableDrawingTool: true,
+        drawingToolOptions: {
+            anchor: BMAP_ANCHOR_TOP_LEFT, 
+            offset: new BMap.Size(50, 5), 
+			drawingModes : [
+				BMAP_DRAWING_MARKER,
+				//BMAP_DRAWING_CIRCLE,
+				BMAP_DRAWING_POLYLINE,
+				BMAP_DRAWING_POLYGON,
+				//BMAP_DRAWING_RECTANGLE 
+			]
+        },
+		enableCalculate: false, // whether calculate area
+		markerOptions: styleOptions,
+        //circleOptions: styleOptions, 
+        polylineOptions: styleOptions, 
+        polygonOptions: styleOptions, 
+        //rectangleOptions: styleOptions
+    });  
+	//  1) markercomplete   2) overlaycomplete
+	/*
+	// events
+	drawingManager.addEventListener('markercomplete', markercomplete);
+	drawingManager.addEventListener('circlecomplete', circlecomplete);
+	drawingManager.addEventListener('polylinecomplete', polylinecomplete);
+	drawingManager.addEventListener('polygoncomplete', polygoncomplete);
+	drawingManager.addEventListener('rectanglecomplete', rectanglecomplete);
+	*/
+	// overlaycomplete
+	drawingManager.addEventListener('overlaycomplete', overlaycomplete);
+	// drawingManager.open();  // open close
+</script>
+</body>
+</html>

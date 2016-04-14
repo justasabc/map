@@ -1,0 +1,87 @@
+﻿<!DOCTYPE html>
+<html>
+    <head>
+        <meta http-equiv="content-type" content="text/html; charset=utf-8" />
+        <meta name="viewport" content="initial-scale=1, maximum-scale=1,user-scalable=no"/>
+        <title>Simple Map</title>
+        
+    </head>
+
+    <body class="claro">
+		<button id="drawPolygon">Polygon</button>
+		<button id="clearButton">Clear</button>
+		<button id="vector">vector</button>
+		<button id="image">image</button>
+		<button id="image25d">image25d</button>
+		<button id="heatmap">Heatmap</button>
+        <div id="map">
+
+            <div id="mapLayerSelector">
+            	<div id="mapLayerSelector-head">
+            		<span>图层选择</span>
+            	</div>
+                <ul>
+                    <li class="mapLayerSelector-li" id="wellLayer">
+                        <input id="wellSelector" type="checkbox" name="mapLayerCheckbox">
+                        <label for="wellSelector" class="checkboxLabel"></label>
+                        <span class="mapLayerSelector-name">井盖</span>
+                    </li>
+                    <li class="mapLayerSelector-li" id="cameraLayer">
+                        <input id="cameraSelector" type="checkbox" name="mapLayerCheckbox">
+                        <label for="cameraSelector" class="checkboxLabel"></label>
+                        <span class="mapLayerSelector-name">摄像头</span>
+                    </li>
+                    <li class="mapLayerSelector-li" id="lightLayer">
+                        <input id="lightSelector" type="checkbox" name="mapLayerCheckbox">
+                        <label for="lightSelector" class="checkboxLabel"></label>
+                        <span class="mapLayerSelector-name">路灯</span>
+                    </li>
+                </ul>
+            </div>
+
+            <div id="changeMapType">
+            	<span>切换地图<i class="fa fa-globe"></i></span>
+            </div>
+            
+            <div id="changeMapWin" class="none">
+				<span class="close" onclick="$.fn.custombox('close');">&times;</span>
+            	<ul>
+            		<li id="changeOverviewMap" class="changeMap-li">
+            			<img class="changeMapItem" alt="全景图" title="全景图" src="image/overviewMap.jpg">
+            		</li>
+            		<li id="changeImageMap" class="changeMap-li">
+            			<img class="changeMapItem" alt="影像图" title="影像图" src="image/imageMap.jpg">
+            		</li>
+            	</ul>
+            </div>
+
+            <div id="HomeButton"></div>
+			
+			<div id="heatmapArea">
+                <div id="heatLayer"></div>
+			</div>
+        </div>
+		
+		
+		<script type="text/javascript" src="js/jquery-1.11.1.min.js"></script>
+		<script type="text/javascript" src="js/heatmap/heatmap-2.0.js"></script>
+        <script type="text/javascript">
+            dojoConfig = {
+                parseOnLoad: true,
+                packages: [{
+                    name: 'js',
+                    location: "http://localhost/map/js"
+                }]
+            };
+        </script>
+
+	    <link rel="stylesheet" href="http://js.arcgis.com/3.14/dijit/themes/claro/claro.css">
+	    <link rel="stylesheet" href="http://js.arcgis.com/3.14/esri/css/esri.css">
+	    <script src="http://js.arcgis.com/3.14/"></script>
+		<link rel="stylesheet" href="style/font-awesome.min.css">
+	    <link rel="stylesheet" href="map.css">
+	    <link rel="stylesheet" href="style/jquery.custombox.css">
+	    <script type="text/javascript" src="js/jquery.custombox.js"></script>
+	    <script type="text/javascript" src="map.js"></script>
+    </body>
+</html>

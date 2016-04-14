@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+	<meta name="viewport" content="initial-scale=1.0, user-scalable=no" />
+	<style type="text/css">
+		body, html,#allmap {width: 100%;height: 100%;overflow: hidden;margin:0;font-family:"微软雅黑";}
+	</style>
+	<script type="text/javascript" src="http://api.map.baidu.com/api?v=2.0&ak=627348740657010a651a38fd51ac075c"></script>
+	<!--drawing manager-->
+	<script type="text/javascript" src="http://api.map.baidu.com/library/DrawingManager/1.4/src/DrawingManager_min.js"></script>
+	<link rel="stylesheet" href="http://api.map.baidu.com/library/DrawingManager/1.4/src/DrawingManager_min.css" />
+	<script src="js/jquery-1.7.2.min.js"></script>
+	
+	<script src="js/util/ArrayUtil.js"></script>
+	<script src="js/util/IOUtil.js"></script>
+	<script src="js/util/DeleteUtil.js"></script>
+	<script src="js/util/BaiduUtil.js"></script>
+	<script src="js/util/PointUtil.min.js"></script>
+	
+	<!--x y points-->
+	<script src="data/xfs/bd_x.js"></script>
+	<script src="data/xfs/bd_y.js"></script>
+	<script src="data/xfs/fs_x.js"></script>
+	<script src="data/xfs/fs_y.js"></script>
+	<title>Point Marking</title>
+</head>
+<body>
+	<div id="tools">
+		<!--
+		<input type="image" id="AddImage" src="images/32/add.png"/>
+		-->
+		
+		<button id="AddButton" >Add</button>
+		<button id="MoveButton" >Move</button>
+		<button id="DeleteButton" >Delete</button>
+		<button id="ClearButton" >Clear All</button>
+	</div>
+	
+	<div id="io">
+		<button id="OutputButton" >Output</button>
+		<button id="SaveButton" >Save Points</button>
+		<button id="LoadButton" >Load Points</button>
+		<input type="file" id="file_input"/> 
+	</div>
+	
+	<div id="locate">
+		Address<input type="text" id="address" />
+		<button id="LocateButton" >Locate</button>
+	</div>
+
+	<div id="info"></div>
+	<div id="allmap"></div>
+</body>
+</html>
+<script type="text/javascript">
+	// close defaut POI click event
+	var level = 19;
+	var map = new BMap.Map("allmap",{enableMapClick:false}); 
+	var point = new BMap.Point(113.1296690000,23.0249320000); //23.0249320000,113.1296690000
+	map.centerAndZoom(point,level);
+	map.setCurrentCity("佛山市");
+	
+	//map.setMapType(BMAP_HYBRID_MAP);
+	//map.setMapType(BMAP_SATELLITE_MAP);
+	map.setMapType(BMAP_NORMAL_MAP);
+	
+	map.addControl(new BMap.NavigationControl());           
+	map.addControl(new BMap.MapTypeControl());  	
+	map.enableScrollWheelZoom(true);                           
+	map.disable3DBuilding();
+	
+	/*
+	var style = 'normal';  // normal midnight
+	map.setMapStyle({style:style});
+	*/
+	
+	// 
+	var action_type = ""; // add move delete
+	var point_list = [];  // point_list(marker,address) for UI
+	var store_list = [];  // store_list(lng,lat,address) for storage
+	var filename = "points.json"; // must be json type
+ 	var data_url = "./data/"+filename;
+	
+	function enableMoving(point_list){
+		point_list.forEach(function(p){
+			// p.marker,  p.address 
+			var marker = p.marker;
+			marker.enableDragging();
+		});
+	};
+	function disableMoving(point_list){
+		point_list.forEach(function(p){
+			// p.marker,  p.address 
+			var marker = p.marker;
+			marker.disableDragging();
+		});
+	};
+	
+	var geoc = new BMap.Geocoder();
+	map.addEventListener("click",mapClick);
+	map.addEventListener("mousemove",mapMouseMove);
+	map.setDefaultCursor("default"); 
+	
+	//====================================================================
+	// ui event
+	//====================================================================
+	document.getElementById("AddButton").onclick = function(){ 
+		action_type = "add";
+		map.setDefaultCursor("crosshair"); 
+		disableMoving(point_list); // disable moving
+	};
+	document.getElementById("DeleteButton").onclick = function(){ 
+		action_type = "delete";
+		map.setDefaultCursor("default"); 
+		disableMoving(point_list); // disable moving
+	};
+	document.getElementById("MoveButton").onclick = function(){ 
+		action_type = "move";
+		map.setDefaultCursor("default"); 
+		enableMoving(point_list); // enable moving
+	};
+	document.getElementById("ClearButton").onclick = function(){ 
+		clearAll();
+	};
+	document.getElementById("LocateButton").onclick = function(){ 
+		locateAddress();
+	};
+	
+	document.getElementById("OutputButton").onclick = function(){ 
+		outputPoint(point_list);
+	};
+	// save and load points
+	document.getElementById("SaveButton").onclick = function(){ 
+		saveJson(point_list,filename);
+	};
+	document.getElementById("LoadButton").onclick = function(){ 
+		loadJson_byUrl(data_url);
+	};
+	
+	//=================================================================
+	// map events
+	//=================================================================
+	function mapClick(e){
+		console.log("mapClick");
+		if (action_type=="add"){
+			//addCamera(e.point);
+			addAddress(e.point);
+		}else if (action_type=="delete"){
+			//deletePoint(e.point);  // old style
+			deleteOverlay(e.overlay);// new style
+		}
+		// show point count
+		showPointCount();
+	}
+	
+	function mapMouseMove(e){
+		var pt = e.point;
+		if (action_type=="add"){
+		}else if (action_type=="delete"){
+			//mouseMoveDeletePoint(pt);
+		}
+	}
+	
+	// add camera
+	function addCamera(pt){
+		geoc.getLocation(pt, function(rs){
+			var addComp = rs.addressComponents;
+			var full_address = addComp.province+addComp.city+addComp.district+addComp.street+addComp.streetNumber;
+			inputField(pt,full_address);
+		});
+	}
+	
+	// add address
+	function addAddress(pt){
+		inputField(pt,"");
+	}
+	
+	function inputField(pt,text){
+		var address = prompt("请输入地址",text);
+		// make sure input name is valid
+		if (address!=null && address!=""){
+			var marker = new BMap.Marker(pt);
+			map.addOverlay(marker);
+			setMarkerLabel(marker,address); // set label
+			
+			// save point 
+			var point_dict = {"marker":marker,"address":address};
+			point_list.push(point_dict);
+		}
+	}
+	
+	/*
+	function mouseMoveDeletePoint(point){
+		var bselect = false;
+		var i;
+		for(i=0;i<point_list.length;i++){
+			var pt = point_list[i];
+			bselect = selectPoint(point,pt);
+			if (bselect == true){
+				map.setDefaultCursor("pointer");
+				return;
+			}else{
+				map.setDefaultCursor("default"); 
+			}
+		}
+	}
+	*/
+	
+	//====================================================================
+	// locate address 
+	//====================================================================	
+	function locateAddress(){
+		var name = $("#address").val();
+		if (name!=null && name!=""){
+			locate(name);
+		}
+		else {
+			alert("请输入有效地址");
+		}
+	}
+	
+	function locate(name){
+		geoc.getPoint(name, function(point){
+			if (point) {
+				map.centerAndZoom(point, level);
+				
+				var marker = new BMap.Marker(point);
+				map.addOverlay(marker);
+				setMarkerLabel(marker,"+"); // set label
+			}else{
+				alert("您选择地址没有解析到结果!");
+			}
+		}, "佛山市");
+	}
+	
+	//====================================================================
+	// output point 
+	//====================================================================
+	function showPointCount(){
+		var text = "#"+point_list.length+"个点";
+		document.getElementById('info').innerHTML=text;
+	}
+	
+	//========================================================================
+	// upload file
+	//========================================================================
+	registerFileEvent("file_input"); // register	
+	
+	//=========================================================================
+	// loading x y data 
+	//=========================================================================
+	var markers = [];
+	//showXYPoints();
+	function showXYPoints(){
+		var x_len = bd_x_array.length;
+		var y_len = bd_y_array.length;
+		if(x_len==y_len){
+			bd_x_array.forEach(function(e,i){
+				var pt = new BMap.Point(bd_x_array[i],bd_y_array[i]);
+				var marker = new BMap.Marker(pt);
+				map.addOverlay(marker);
+			});
+		}else{
+			alert("data not full!");
+		}
+	}
+	
+</script>

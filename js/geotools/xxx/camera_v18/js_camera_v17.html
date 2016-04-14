@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+	<meta name="viewport" content="initial-scale=1.0, user-scalable=no" />
+	<style type="text/css">
+		body, html,#allmap {width: 100%;height: 100%;overflow: hidden;margin:0;font-family:"微软雅黑";}
+	</style>
+	<script type="text/javascript" src="http://api.map.baidu.com/api?v=2.0&ak=627348740657010a651a38fd51ac075c"></script>
+	<link rel="stylesheet" href="http://api.map.baidu.com/library/DrawingManager/1.4/src/DrawingManager_min.css" />
+	<script src="js/jquery-1.7.2.min.js"></script>
+	
+	<!-- main js for global variables and init -->
+	<script src="js/main.js"></script>
+	<script src="js/util/ArrayUtil.js"></script>
+	<script src="js/util/IOUtil.js"></script>
+	<script src="js/util/DeleteUtil.js"></script>
+	<script src="js/util/BaiduUtil.js"></script>
+	<title>摄像头标注工具</title>
+</head>
+<body>
+	<div id="tips">
+		提示：请先点击相应工具，再操作地图上的对象！
+	</div>
+	<div id="tools">
+		工具：
+		<button id="AddButton" >添加</button>
+		<button id="MoveButton" >移动位置</button>
+		<button id="ModifyButton" >修改属性</button>
+		<button id="DeleteButton" >删除</button>
+		<button id="ClearButton" >清除所有</button>
+		<button id="DefaultButton" >默认鼠标</button>
+	</div>
+	
+	<div id="io">
+		<div id="save">
+			保存：
+			<button id="SaveButton" >保存摄像头</button>
+		</div>
+		<div id="load">
+			打开：
+			<input type="checkbox" id="ClearAllPointsCheckBox"/>清除当前已有点</input>
+			<input type="file" id="file_input"/> 
+		</div>
+	</div>
+	
+	<div id="locate">
+		<div id="by_pos">
+			定位：
+			<input type="text" id="lng" size="10"/>
+			<input type="text" id="lat" size="10"/>
+			<button id="PosLocateButton" >坐标定位</button>
+		</div>
+		<div id="by_address">
+			定位：
+			<input type="text" id="address" size="26" />
+			<button id="AddressLocateButton" >地址定位</button>
+		</div>
+	</div>
+	
+	<div id ="info">
+		<div id="pos"></div>
+		<div id="count"></div>
+	</div>
+	
+	<div id="allmap"></div>
+</body>
+</html>
+<script type="text/javascript">
+	main_entry();
+</script>

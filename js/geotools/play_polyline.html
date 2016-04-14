@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+	<meta name="viewport" content="initial-scale=1.0, user-scalable=no" />
+	<style type="text/css">
+		body, html,#allmap {width: 100%;height: 100%;overflow: hidden;margin:0;font-family:"微软雅黑";}
+	</style>
+	<script type="text/javascript" src="http://api.map.baidu.com/api?v=2.0&ak=627348740657010a651a38fd51ac075c"></script>
+	<!--drawing manager-->
+	<script type="text/javascript" src="http://api.map.baidu.com/library/DrawingManager/1.4/src/DrawingManager_min.js"></script>
+	<link rel="stylesheet" href="http://api.map.baidu.com/library/DrawingManager/1.4/src/DrawingManager_min.css" />
+	<script src="js/jquery-1.7.2.min.js"></script>
+	<script src="js/util/BaiduUtil.js"></script>
+    <script src="js/util/CoordinateUtil.js"></script>
+	
+	<title>Play polyline</title>
+</head>
+<body>
+	<div id="io">
+		<button id="Test" >Save Points</button>
+		<button id="LoadButton" >Load Points</button>
+	</div>
+	<div id="info"></div>
+	<div id="allmap"></div>
+</body>
+</html>
+<script type="text/javascript">
+	// close defaut POI click event
+	var level = 19;
+	var map = new BMap.Map("allmap",{enableMapClick:false}); 
+	var point = new BMap.Point(113.1296690000,23.0249320000); //23.0249320000,113.1296690000
+	map.centerAndZoom(point,level);
+	map.setCurrentCity("佛山市");
+	
+	//map.setMapType(BMAP_HYBRID_MAP);
+	//map.setMapType(BMAP_SATELLITE_MAP);
+	map.setMapType(BMAP_NORMAL_MAP);
+	
+	map.addControl(new BMap.NavigationControl());           
+	map.addControl(new BMap.MapTypeControl());  	
+	map.enableScrollWheelZoom(true);                           
+	map.disable3DBuilding();
+	
+	/*
+	var style = 'normal';  // normal midnight
+	map.setMapStyle({style:style});
+	*/
+	var filename = "points.json"; // must be json type
+ 	var data_url = "./data/"+filename;
+	
+	//map.addEventListener("mousemove",mapMouseMove);
+	map.setDefaultCursor("default"); 
+	
+	//====================================================================
+	// ui event
+	//====================================================================
+	document.getElementById("Test").onclick = function(){ 
+    
+	};
+	document.getElementById("LoadButton").onclick = function(){ 
+		//loadJson_byUrl(data_url);
+	};
+	
+    function loadJson_byUrl(data_url){
+        var myP1 = new BMap.Point(116.380967,39.913285);    //起点
+        var myP2 = new BMap.Point(116.424374,39.914668);    //终点
+        var myIcon = new BMap.Icon("http://developer.baidu.com/map/jsdemo/img/Mario.png", new BMap.Size(32, 70), {    //小车图片
+		//offset: new BMap.Size(0, -5),    //相当于CSS精灵
+		imageOffset: new BMap.Size(0, 0)    //图片的偏移量。为了是图片底部中心对准坐标点。
+	  });
+    };
+</script>

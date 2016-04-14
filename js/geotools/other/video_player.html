@@ -1,0 +1,52 @@
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>RTSP Player</title>
+
+</head>
+
+<body onload="init()" >
+	<div id="tools">
+		<input type="text" id="mrl" style="width:440px"/>
+		<button id="playButton">Play</button>
+	</div>
+		
+	<div id="videoArea">
+	<object type='application/x-vlc-plugin' 
+		id='vlc' 
+		events='false
+		classid='clsid:9BE31822-FDAD-461B-AD51-BE1D1C159921' 
+		width="480" 
+		height="320">
+          <param name='mrl' value='' />
+          <param name='volume' value='50' />
+          <param name='autoplay' value='ture' />
+          <param name='loop' value='false' />
+          <param name='fullscreen' value='false' />
+		  <param name='controls' value='false' />
+    </object>
+
+	</div>
+</body>
+</html>
+
+<script type="text/javascript" charset="UTF-8">
+
+	var vlc = document.getElementById("vlc");
+	var default_mrl = "rtsp://19.134.126.54:9000/2aced23e6e1a28342dce45952416e80a.sdp";
+	
+	function init(){
+		document.getElementById("mrl").value = default_mrl;
+	};
+	
+	document.getElementById("playButton").onclick = function(){ 
+		var mrl = document.getElementById("mrl").value;
+		playVideo(mrl);
+	};
+
+	function playVideo(mrl){
+		var itemId = vlc.playlist.add(mrl);
+		vlc.playlist.playItem(itemId);
+	}
+
+</script>

@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="initial-scale=1.0, user-scalable=no" />
+<style type="text/css">
+body, html,#allmap {width: 100%;height: 100%;overflow: hidden;margin:0;font-family:"微软雅黑";}
+</style>
+<script type="text/javascript" src="http://api.map.baidu.com/api?v=2.0&ak=627348740657010a651a38fd51ac075c"></script>
+<!--加载鼠标绘制工具-->
+	<script type="text/javascript" src="http://api.map.baidu.com/library/DrawingManager/1.4/src/DrawingManager_min.js"></script>
+	<link rel="stylesheet" href="http://api.map.baidu.com/library/DrawingManager/1.4/src/DrawingManager_min.css" />
+<title>baiduDraw</title>
+</head>
+<body>
+<div id="changeDraw">
+		<button id="1Btn" >红面绿实线</button>
+		<button id="2Btn" >黄面黄实线</button>
+		<button id="3Btn" >红虚线</button>
+		<button id="4Btn" >蓝虚线</button>
+		<button id="5Btn" >清空</button>
+		<button id="6Btn" >撤销上部操作</button>
+</div>
+<div id="allmap">
+</div>
+</body>
+</html>
+
+<script type="text/javascript">
+var map = new BMap.Map('allmap');
+map.centerAndZoom(new BMap.Point(113.120249,23.032702), 17);
+
+map.setMapStyle({styleJson:[{"featureType": "water","elementType": "all", "stylers": {"color": "#29414b"}}, 
+							{ "featureType": "highway", "elementType": "geometry.fill", "stylers": { "color": "#768e98" } }, 
+							{ "featureType": "highway", "elementType": "geometry.stroke", "stylers": { "color": "#122a34" } }, 
+							{ "featureType": "arterial", "elementType": "geometry.fill", "stylers": { "color": "#000000" } }, 
+							{ "featureType": "arterial", "elementType": "geometry.stroke", "stylers": { "color": "#2e4650" } }, 
+							{ "featureType": "local", "elementType": "geometry", "stylers": { "color": "#102102832" } }, 
+							{ "featureType": "land", "elementType": "all", "stylers": { "color": "#122a34" } }, 
+							{ "featureType": "railway", "elementType": "geometry.fill", "stylers": { "color": "#000000" } }, 
+							{ "featureType": "railway", "elementType": "geometry.stroke", "stylers": { "color": "#08304b" } }, 
+							{ "featureType": "subway", "elementType": "geometry", "stylers": { "lightness": -70 } }, 
+							{ "featureType": "building", "elementType": "geometry.fill", "stylers": { "color": "#344c56" } }, 
+							{ "featureType": "all", "elementType": "labels.text.fill", "stylers": { "color": "#857f7f" } }, 
+							{ "featureType": "all", "elementType": "labels.text.stroke", "stylers": { "color": "#122a34" } }, 
+							{ "featureType": "building", "elementType": "geometry", "stylers": { "color": "#022338" } }, 
+							{ "featureType": "green", "elementType": "geometry", "stylers": { "color": "#062032" } }, 
+							{ "featureType": "boundary", "elementType": "all", "stylers": { "color": "#1e1c1c" } }, 
+							//{ "featureType": "poi", "elementType": "all", "stylers": { "color": "#022338", "visibility": "off" } }, 
+							{ "featureType": "manmade", "elementType": "all", "stylers": { "color": "#022338" } } ]});
+
+	var top_left_navigation = new BMap.NavigationControl(); 
+	map.addControl(top_left_navigation);
+							
+	var overlays = [];
+	var overlaycomplete = function(e){
+        overlays.push(e.overlay);
+    };
+	var number = 0;
+
+    var styleRedPolygonOptions = {
+        strokeColor:"red",    //边线颜色。
+        fillColor:"red",      //填充颜色。当参数为空时，圆形将没有填充效果。
+        strokeWeight: 2,       //边线的宽度，以像素为单位。
+        strokeOpacity: 0.6,	   //边线透明度，取值范围0 - 1。
+        fillOpacity: 0.6,      //填充的透明度，取值范围0 - 1。
+        strokeStyle: 'solid' //边线的样式，solid或dashed。
+    }
+	
+	var styleGreenPolylineOptions = {
+        strokeColor:"green",    //边线颜色。
+        fillColor:"green",      //填充颜色。当参数为空时，圆形将没有填充效果。
+        strokeWeight: 5,       //边线的宽度，以像素为单位。
+        strokeOpacity: 0.9,	   //边线透明度，取值范围0 - 1。
+        fillOpacity: 0.9,      //填充的透明度，取值范围0 - 1。
+        strokeStyle: 'solid' //边线的样式，solid或dashed。
+    }
+	
+	var styleYellowPolygonOptions = {
+        strokeColor:"yellow",    //边线颜色。
+        fillColor:"yellow",      //填充颜色。当参数为空时，圆形将没有填充效果。
+        strokeWeight: 2,       //边线的宽度，以像素为单位。
+        strokeOpacity: 0.6,	   //边线透明度，取值范围0 - 1。
+        fillOpacity: 0.6,      //填充的透明度，取值范围0 - 1。
+        strokeStyle: 'solid' //边线的样式，solid或dashed。
+    }
+	
+	var styleYellowPolylineOptions = {
+        strokeColor:"yellow",    //边线颜色。
+        fillColor:"yellow",      //填充颜色。当参数为空时，圆形将没有填充效果。
+        strokeWeight: 5,       //边线的宽度，以像素为单位。
+        strokeOpacity: 0.9,	   //边线透明度，取值范围0 - 1。
+        fillOpacity: 0.9,      //填充的透明度，取值范围0 - 1。
+        strokeStyle: 'solid' //边线的样式，solid或dashed。
+    }
+	
+	var styleRedDashedPolylineOptions = {
+        strokeColor:"red",    //边线颜色。
+        fillColor:"red",      //填充颜色。当参数为空时，圆形将没有填充效果。
+        strokeWeight: 3,       //边线的宽度，以像素为单位。
+        strokeOpacity: 0.9,	   //边线透明度，取值范围0 - 1。
+        fillOpacity: 0.9,      //填充的透明度，取值范围0 - 1。
+        strokeStyle: 'dashed' //边线的样式，solid或dashed。
+    }
+	
+	var styleBlueDashedPolylineOptions = {
+        strokeColor:"blue",    //边线颜色。
+        fillColor:"blue",      //填充颜色。当参数为空时，圆形将没有填充效果。
+        strokeWeight: 3,       //边线的宽度，以像素为单位。
+        strokeOpacity: 0.9,	   //边线透明度，取值范围0 - 1。
+        fillOpacity: 0.9,      //填充的透明度，取值范围0 - 1。
+        strokeStyle: 'dashed' //边线的样式，solid或dashed。
+    }
+
+    //实例化鼠标绘制工具
+    var drawingManager = new BMapLib.DrawingManager(map, {
+        isOpen: false, //是否开启绘制模式
+        enableDrawingTool: true, //是否显示工具栏
+        drawingToolOptions: {
+            anchor: BMAP_ANCHOR_TOP_RIGHT, //位置
+            offset: new BMap.Size(5, 5), //偏离值
+        },
+        polylineOptions: styleGreenPolylineOptions, //线的样式
+        polygonOptions: styleRedPolygonOptions, //多边形的样式
+        rectangleOptions: styleRedPolygonOptions //矩形的样式
+    });  
+	 //添加鼠标绘制工具监听事件，用于获取绘制结果
+    drawingManager.addEventListener('overlaycomplete', overlaycomplete);
+    function clearAll() {
+		for(var i = 0; i < overlays.length; i++){
+            map.removeOverlay(overlays[i]);
+        }
+        overlays.length = 0   
+    }
+	//绿实线红面
+	document.getElementById("1Btn").onclick = function(){ 
+		drawingManager.close();
+		if(number == 0){
+			drawingManager = new BMapLib.DrawingManager(map, {
+				isOpen: false, //是否开启绘制模式
+				enableDrawingTool: true, //是否显示工具栏
+				drawingToolOptions: {
+					anchor: BMAP_ANCHOR_TOP_RIGHT, //位置
+					offset: new BMap.Size(5, 5), //偏离值
+				},
+				polylineOptions: styleGreenPolylineOptions, //线的样式
+				polygonOptions: styleRedPolygonOptions, //多边形的样式
+				rectangleOptions: styleRedPolygonOptions //矩形的样式
+			});  
+			//添加鼠标绘制工具监听事件，用于获取绘制结果
+			drawingManager.addEventListener('overlaycomplete', overlaycomplete);
+		}
+	};
+	//黄实线黄面
+	document.getElementById("2Btn").onclick = function(){ 
+		drawingManager.close();
+		if(number == 0){
+			drawingManager = new BMapLib.DrawingManager(map, {
+				isOpen: false, //是否开启绘制模式
+				enableDrawingTool: true, //是否显示工具栏
+				drawingToolOptions: {
+					anchor: BMAP_ANCHOR_TOP_RIGHT, //位置
+					offset: new BMap.Size(5, 5), //偏离值
+				},
+				polylineOptions: styleYellowPolylineOptions, //线的样式
+				polygonOptions: styleYellowPolygonOptions, //多边形的样式
+				rectangleOptions: styleYellowPolygonOptions //矩形的样式
+			});  
+			//添加鼠标绘制工具监听事件，用于获取绘制结果
+			drawingManager.addEventListener('overlaycomplete', overlaycomplete);
+		}
+	};
+	
+	//红虚线
+	document.getElementById("3Btn").onclick = function(){ 
+		drawingManager.close();
+		if(number == 0){
+			drawingManager = new BMapLib.DrawingManager(map, {
+				isOpen: false, //是否开启绘制模式
+				enableDrawingTool: true, //是否显示工具栏
+				drawingToolOptions: {
+					anchor: BMAP_ANCHOR_TOP_RIGHT, //位置
+					offset: new BMap.Size(5, 5), //偏离值
+				},
+				polylineOptions: styleRedDashedPolylineOptions, //线的样式
+				polygonOptions: styleRedPolygonOptions, //多边形的样式
+				rectangleOptions: styleRedPolygonOptions //矩形的样式
+			});  
+			//添加鼠标绘制工具监听事件，用于获取绘制结果
+			drawingManager.addEventListener('overlaycomplete', overlaycomplete);
+		}
+	};
+	
+	//蓝虚线
+	document.getElementById("4Btn").onclick = function(){ 
+		drawingManager.close();
+		if(number == 0){
+			drawingManager = new BMapLib.DrawingManager(map, {
+				isOpen: false, //是否开启绘制模式
+				enableDrawingTool: true, //是否显示工具栏
+				drawingToolOptions: {
+					anchor: BMAP_ANCHOR_TOP_RIGHT, //位置
+					offset: new BMap.Size(5, 5), //偏离值
+				},
+				polylineOptions: styleBlueDashedPolylineOptions, //线的样式
+				polygonOptions: styleRedPolygonOptions, //多边形的样式
+				rectangleOptions: styleRedPolygonOptions //矩形的样式
+			});  
+			//添加鼠标绘制工具监听事件，用于获取绘制结果
+			drawingManager.addEventListener('overlaycomplete', overlaycomplete);
+		}
+	};
+	
+	//清空所有图形
+	document.getElementById("5Btn").onclick = function(){ 
+		clearAll();
+	};
+	
+	//撤销上步操作
+	document.getElementById("6Btn").onclick = function(){ 
+        map.removeOverlay(overlays[overlays.length-1]);
+        overlays.length = overlays.length - 1;   
+	};
+
+  
+</script>
+
