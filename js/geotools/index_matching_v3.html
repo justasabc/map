@@ -41,6 +41,7 @@
 		<button id="saveFSPoint" >1-----佛山</button>
 		<button id="saveBaiduPoint">2-----百度</button>
 	</div>
+	<div id="count"></div>
 	<div id="bd"></div>
 	<div id="fs"></div>
 	<div id="info"></div>
@@ -250,17 +251,26 @@
 			point_pairs.push(current_fs_bd);
 			current_fs_bd = [];
 	
+			// show point count
+			showPointCount(point_pairs);
+			
 			// show 
-			showPoints(point_pairs);
+			//showPoints(point_pairs);
 		}
 	};
+	
+	showPointCount(point_pairs);// show count on startup
+	function showPointCount(point_pairs){
+		var text = point_pairs.length;
+		document.getElementById('count').innerHTML= "#"+text;
+	}
 	
 	function outputSaveProgress(){
 		var text = "";
 		if(current_fs_bd.length==2){
-			text = current_fs_bd[0]+","+current_fs_bd[1];
+			text = "+"+current_fs_bd[0]+","+current_fs_bd[1];
 		}else if(current_fs_bd.length==4){
-			text = current_fs_bd[0]+","+current_fs_bd[1]+","+current_fs_bd[2]+","+current_fs_bd[3];
+			text = "+"+current_fs_bd[0]+","+current_fs_bd[1]+","+current_fs_bd[2]+","+current_fs_bd[3];
 		}
 		document.getElementById('info').innerHTML= text;	
 	};
