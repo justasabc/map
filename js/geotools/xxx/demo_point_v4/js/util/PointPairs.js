@@ -5,7 +5,7 @@
 	@author: kezunlin
 	@create date: 2016-4-19
 	@update date: 2016-4-19
-	@version: v1.1
+	@version: v1.0
 	************************
 	
 	NOTICE: 

@@ -30,6 +30,7 @@ var map;
 var fsmap,vectorLayer;
 
 var point_fs = new Geo.LonLat(508005.71000913,2546218.3446376);
+var point_fs = new Geo.LonLat(511466.37936879694,2546847.857516554); // ERROR POINT
 var point_bd = fs2baidu(point_fs);
 var level_bd = 13;// level 1-19
 var level_fs = 0;// level 0-7
@@ -234,7 +235,7 @@ function init_fsmap(){
 	fsmap.addLayers([fslayer_yx,vectorLayer]); // image
 	//fsmap.addLayers([fslayer_25d,vectorLayer]); // image25d
 	fsmap.setCenter(point_fs, level_fs);
-	//addFSPoint(point_fs);
+	addFSPoint(point_fs);
 }
 
 function register_ui_events_dom(){
@@ -291,6 +292,7 @@ var ymax = 2551000;
 var x_delta = 5000;
 var y_delta = 5000;
 
+// 511466.37936879694 2546847.857516554
 function createGrid(){
 	for(var x = xmin; x<xmax; x+=x_delta) // 20
 		for(var y = ymin; y<ymax; y+=y_delta){ // 15
