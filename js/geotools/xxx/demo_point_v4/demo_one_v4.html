@@ -16,15 +16,13 @@
 		var point_bd = {lon:113.01888,lat:23.047282};
 		var point_fs = {lon:500609.09693615,lat:2549401.6559681};
 		
-		//ERROR [113.12502  23.024103]  [511466.37936879694 2546847.857516554]
 		var point_bd = {lon:113.12502,lat:23.024103}; // 511466.37936879694,2546847.857516554
-		
 		// 2 methods demo
 		var pt_fs = baidu_to_fs_allInOne(point_bd);
 		var pt_bd = fs_to_baidu_allInOne(point_fs);
 		
-		alert(pt_fs.lon+","+pt_fs.lat);
-		alert(pt_bd.lon+","+pt_bd.lat);
+		//alert(pt_fs.lon+","+pt_fs.lat);
+		//alert(pt_bd.lon+","+pt_bd.lat);
 		
 		console.log(pt_fs.lon+","+pt_fs.lat);
 		console.log(pt_bd.lon+","+pt_bd.lat);

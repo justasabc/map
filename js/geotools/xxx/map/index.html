@@ -1,0 +1,30 @@
+﻿<!DOCTYPE html>
+<html>
+    <head>
+        <meta http-equiv="content-type" content="text/html; charset=utf-8" />
+        <meta name="viewport" content="initial-scale=1, maximum-scale=1,user-scalable=no"/>
+        <title>Simple Map</title>
+        
+    </head>
+	
+    <body class="claro">
+		<script type="text/javascript">
+            dojoConfig = {
+                parseOnLoad: true,
+                packages: [{
+                    name: 'js',
+                    location: "http://localhost/map/js"
+                }]
+            };
+			
+    </script>
+
+	<link rel="stylesheet" href="http://js.arcgis.com/3.14/dijit/themes/claro/claro.css">
+	<link rel="stylesheet" href="http://js.arcgis.com/3.14/esri/css/esri.css">
+	<script src="http://js.arcgis.com/3.14/"></script>
+	<script type="text/javascript" src="js/map.js"></script>
+	
+        <div id="map">
+        </div>
+    </body>
+</html>

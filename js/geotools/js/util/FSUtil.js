@@ -32,8 +32,8 @@ function fs_demo_style(){
 function addFSPoint(pt){
 	var point_style_fs = OpenLayers.Util.extend({}, Geo.Feature.Vector.style["default"]);
 	point_style_fs.pointRadius = 8;
-	point_style_fs.strokeColor = "red";
-	point_style_fs.fillColor = "red";
+	point_style_fs.strokeColor = fs_color;
+	point_style_fs.fillColor = fs_color;
 	point_style_fs.fillOpacity = 1.0;
 
 	var newpoint = new Geo.Geometry.Point(pt.lon,pt.lat);
@@ -44,7 +44,7 @@ function addFSPoint(pt){
 		
 function addFSGridLine(grid_points){
 	var line_style_fs = OpenLayers.Util.extend({}, Geo.Feature.Vector.style["default"]);
-	line_style_fs.strokeColor = "red";
+	line_style_fs.strokeColor = fs_color;
 	line_style_fs.strokeWidth = 4;
 	
 	var line_point_pairs = [];

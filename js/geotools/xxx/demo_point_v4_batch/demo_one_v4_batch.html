@@ -1,0 +1,68 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+	<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+	<title>DEMO USAGE</title>
+
+	<script src="data/bd_x.js"></script>
+	<script src="data/bd_y.js"></script>
+	
+	<!-- by ke-->
+	<script src="js/util/PointPairs.js"></script>
+	<script src="js/util/PointUtil.min.js"></script>
+	<script src="js/util/IOUtil.js"></script>
+</head>
+<body>
+	<script>
+	
+	function test_array(){
+	var test_array = [
+		1
+		,2
+		,3
+		];
+	}
+	
+var xmin = 490000;
+var xmax = 527000;
+var ymin = 2536000;
+var ymax = 2561000;
+	
+	function test_demo(){
+		//console.log(bd_x.length);
+		//console.log(bd_y.length); // 158940
+		var length = bd_x.length;
+		//var point_bd = {lon:113.01888,lat:23.047282};
+		//var pt_fs = baidu_to_fs_allInOne(point_bd);
+		process(bd_x,bd_y,length);
+	};
+	
+	function process(bd_x,bd_y,length){
+		var fs_x_str = "";
+		var fs_y_str = "";
+		for(var i = 0;i<length;i++){
+			var point_bd = {lon:bd_x[i],lat:bd_y[i]};
+			var pt_fs = baidu_to_fs_allInOne(point_bd);
+			if (pt_fs.lon<=xmin || pt_fs.lon>=xmax){
+				//console.log("x---"+pt_fs.lon);
+				//console.log(bd_x[i]+","+bd_y[i]);
+			}
+			
+			if (pt_fs.lat<=ymin || pt_fs.lat>=ymax){
+				//console.log("y---"+pt_fs.lat);
+				//console.log(bd_x[i]+","+bd_y[i]);
+			}
+			//fs_x_str += (pt_fs.lon+"\r\n");
+			fs_y_str += (pt_fs.lat+"\r\n");
+		}
+		console.log(fs_y_str);
+		//console.log(fs_y_str);
+		//download('fs_x.txt',fs_x_str);
+		//download('fs_y.txt',fs_y_str);
+		console.log('Finished.');
+	}
+	test_demo();
+	
+	</script>
+</body>
+</html>

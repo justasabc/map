@@ -95,7 +95,7 @@ function getKNearestPoints(pt_fs,k){
 };
 */
 
-var default_radius = 750; // default 1000
+var default_radius = 1000;
 function getPointsInRadius(point_fs,r){
 	var points_in_radius = [];
 	point_pairs.forEach(function(p){
@@ -111,7 +111,7 @@ function getPointsInRadius(point_fs,r){
 };
 
 // @global
-var min_point_count = 5; // default 5
+var min_point_count = 5;
 function getPointsInRadius_3Level(point_fs,r){
 	// use 3-level radius
 	// 1-radius level
@@ -127,14 +127,8 @@ function getPointsInRadius_3Level(point_fs,r){
 	
 	// alert 
 	if(points_in_radius.length<min_point_count){
-		/*
 		console.log("no enough points");
 		//alert("Use global KB because there are not enough points "+points_in_radius.length);
-		var p=g_point;
-		var point_fs = {lon:p[0],lat:p[1]};
-		var point_bd = {lon:p[2],lat:p[3]};
-		console.log("["+point_fs.lon+","+point_fs.lat+","+point_bd.lon+","+point_bd.lat+"]");
-		*/
 	}
 	return points_in_radius;
 };
@@ -189,10 +183,8 @@ function calKB(points){
 
 // update kb by fs point
 function updateKB_ByPoint(point_fs){
-	//var r = default_radius; //
-	var r = g_default_radius; // change radius
+	var r = default_radius;
 	var points_in_radius = getPointsInRadius_3Level(point_fs,r);
-	g_point_count = points_in_radius.length; // use outside
 	var result = calKB(points_in_radius);
 	setKB(result);
 };

@@ -1,0 +1,288 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <meta name="viewport" content="initial-scale=1, maximum-scale=1,user-scalable=no">
+    <title></title>
+    <script type="text/javascript" src="http://19.134.126.50/cczfgis/scripts/jquery-1.11.0.min.js"></script>
+    <link rel="stylesheet" type="text/css" href="http://19.134.126.50/arcgis_js_api/library/3.14/jsapi/esri/css/esri.css" />
+    <link rel="stylesheet" type="text/css" href="http://19.134.126.50/arcgis_js_api/library/3.14/jsapi/dijit/themes/tundra/tundra.css" />
+    <script>var dojoConfig = { parseOnLoad: true };</script>
+    <script type="text/javascript" id="arcgis_js_api" src="http://19.134.126.50/arcgis_js_api/library/3.14/jsapi"></script>
+    <style>
+        html, body {
+            height: 100%;
+            width: 100%;
+            margin: 0;
+            padding: 0;
+        }
+
+        #map {
+            padding: 0;
+            height: 100%;
+            width: 100%;
+            margin: 0;
+            padding: 0;
+        }
+
+        table td {
+            border: 1px solid rgb(0,0,0);
+            border-collapse: collapse;
+            padding: 2px;
+        }
+    </style>
+    <script>
+        dojo.require("esri.map");
+        dojo.require("esri.toolbars.draw");
+        dojo.require("esri.geometry.Circle");
+        var map;
+        //查询
+        var queryTask, query;
+        var featureSet;
+        var isQuery = false;//是否执行空间查询
+		
+        function init() {
+            //设置post方式查询
+            //esriConfig.defaults.io.proxyUrl = "http://localhost/proxy/proxy.ashx";//其中proxyUrl是你部署到IIS下的路径即可。
+            //esriConfig.defaults.io.alwaysUseProxy = true;
+			esriConfig.defaults.io.proxyUrl = '/proxy';
+
+            //初始化查询工具
+            queryTask = new esri.tasks.QueryTask("http://19.134.126.50/ArcGIS/rest/services/CCZF_BJ/MapServer/0");
+            //queryTask = new esri.tasks.QueryTask("http://19.134.126.50/ArcGIS/rest/services/CCZF_WG/MapServer/1");
+			
+            var url = "http://19.134.126.50/cczfgis/scripts/esri/lib.layer.js";
+            $.ajax({
+                type: "GET", url: url, dataType: "script",
+                success: initMap, error: function (a, b, c) {
+                    if (a.status == '404') {
+                        alert('服务器缺少lib.layer文件');
+                    }
+                    success();
+                }
+            });
+        }
+		
+        //初始化
+        function initMap() {
+
+            //初始化地图控件
+            map = new esri.Map("map", {
+                //basemap: "streets",
+                //center: [500817, 2550455],
+                //zoom: 13,
+                logo: false
+            });
+
+            //单击地图时调用executeQueryTask 方法
+            dojo.connect(map, "onClick", executeQueryTask);
+            //当信息窗口隐藏时，清除地图graphics
+            dojo.connect(map.infoWindow, "onHide", function () { map.graphics.clear(); });
+
+            //添加矢量图层
+            var wmts = new CCSLLayer();
+            wmts.id = 'wmts';
+            map.addLayer(wmts);
+			wmts.setVisibility(false); 
+			
+            var wmts_anno = new CCSLLayer_Anno();
+            wmts_anno.id = 'wmts_anno';
+            map.addLayer(wmts_anno);
+			wmts_anno.setVisibility(false); 
+
+            //添加卫片
+            var wp = new CCYXLayer();
+            wp.id='wp';
+            map.addLayer(wp);
+            wp.setVisibility(false);  //关闭卫片
+
+            //添加2.5
+            var l25 = new CCGTFZH();
+            l25.id = 'l25';
+            map.addLayer(l25);
+            //l25.setVisibility(false);  //关闭2.5
+
+            //增加上水井盖图
+            SSJGFeautre = new esri.layers.FeatureLayer("http://19.134.126.50/ArcGIS/rest/services/CCZF_BJ/MapServer/0", {
+                outFields: ["*"]
+            })
+            var symbol = new esri.symbol.SimpleMarkerSymbol(esri.symbol.SimpleMarkerSymbol.STYLE_SQUARE,
+                10,
+                new esri.symbol.SimpleLineSymbol(esri.symbol.SimpleLineSymbol.STYLE_SOLID,
+                    new dojo.Color([255, 0, 0]),
+                    1
+                ),
+                new dojo.Color([0, 255, 0, 0.25])
+            );
+			
+            //设置渲染符号
+            var sr = new esri.renderer.SimpleRenderer(symbol);
+            SSJGFeautre.setRenderer(sr);
+            SSJGFeautre.id = "SSJG";
+            map.addLayer(SSJGFeautre);
+            map.getLayer('SSJG').setVisibility(true);
+
+            //定位到佛山地区,并设置为第5层
+            var xy = { x: 510913.569, y: 2547824.903 };//佛山市府附近的点坐标
+            var cPoint = new esri.geometry.Point(xy);
+            cPoint.spatialReference = null;
+            map.centerAndZoom(cPoint, 5);
+        }
+
+        //页面加载完成后执行初始化
+        dojo.ready(init);
+
+        $(document).ready(function () {
+        });
+
+        function openLayer(layer) {
+            map.getLayer('wmts').setVisibility(false);
+            map.getLayer('wmts_anno').setVisibility(false);
+            map.getLayer('wp').setVisibility(false);
+            map.getLayer('l25').setVisibility(false);
+            var ls = layer.split(',');
+            for (var i = 0; i < ls.length;i++){
+                map.getLayer(ls[i]).setVisibility(true);
+            }
+        }
+        //画面
+        function DrawPolygon() {
+            var tbPolygon = new esri.toolbars.Draw(map);
+            tbPolygon.activate(esri.toolbars.Draw.POLYGON);
+            dojo.connect(tbPolygon, "onDrawEnd", function (mapPolygon) {
+                isQuery = true;
+                var symbol = new esri.symbol.SimpleFillSymbol();
+                var graphic = new esri.Graphic(mapPolygon, symbol);
+                map.graphics.add(graphic);
+                search(mapPolygon);
+                tbPolygon.deactivate();
+                isQuery = false;
+            });
+        }
+
+        function search(geometry, queryStr) {
+            //设置查询输入条件
+            query = new esri.tasks.Query();
+            query.returnGeometry = true;
+            query.outFields = ["*"];
+            query.outSpatialReference = map.spatialReference;
+            if (geometry != null) {
+                query.geometry = geometry;
+                geometry.spatialReference = map.spatialReference;
+            }
+            if (queryStr != null) query.where = queryStr;
+            else query.where = "1=1";
+            query.spatialRelationship = esri.tasks.Query.SPATIAL_REL_INTERSECTS;
+            query.returnGeometry = true;
+            //查询
+            queryTask.execute(query, function (featureSet) {
+                  showFeatureSet(featureSet);
+            },
+            function (e) {
+                alert(e);
+            });
+        }
+        //map点击事件
+        function executeQueryTask(evt) {
+            if (isQuery) return;
+            map.infoWindow.hide();
+            map.graphics.clear();
+            featureSet = null;
+            var geo = evt.mapPoint;
+            //将查询范围扩大
+            var calc = map.extent.getWidth() / 100;
+            geo = new esri.geometry.Extent(geo.x - calc, geo.y - calc, geo.x + calc, geo.y + calc);
+            geo.spatialReference = map.spatialReference;
+            query = new esri.tasks.Query();
+            query.outSpatialReference = map.spatialReference;
+            query.returnGeometry = true;
+            query.outFields = ["*"];
+            query.geometry = geo;
+            query.where = "1=1";
+            query.spatialRelationship = esri.tasks.Query.SPATIAL_REL_INTERSECTS;
+            //执行查询
+            queryTask.execute(query, function (fset) {
+                if (fset.features.length === 1) {
+                    showFeature(fset.features[0], evt);
+                } else if (fset.features.length !== 0) {
+                    showFeatures(fset, evt);
+                }
+            });
+        }
+        //将单个的fuature信息展示在infowindow面板中
+        function showFeature(feature, evt) {
+            //设置渲染符号
+            map.graphics.clear();
+            var attr = feature.attributes;
+            var symbol = new esri.symbol.SimpleMarkerSymbol(esri.symbol.SimpleMarkerSymbol.STYLE_SOLID, new dojo.Color([0, 182, 255]), 5);
+            feature.setSymbol(symbol);
+            //设置显示面板信息
+            var content = "ID : " + attr.OBJECTID_1
+                       + "<br />一级管理单位   : " + attr.DeptName1
+                       + "<br />POINT_X  : " + attr.POINT_X
+                       + "<br />POINT_Y  : " + attr.POINT_X;
+             map.infoWindow.setTitle("查询结果");
+             map.infoWindow.setContent(content);
+             (evt) ? map.infoWindow.show(evt.screenPoint, map.getInfoWindowAnchor(evt.screenPoint)) : null;
+            //要素增加map中
+            map.graphics.add(feature);
+
+        }
+        function showFeatures(fset, evt) {
+            //清除graphic
+            map.graphics.clear();
+            var screenPoint = evt.screenPoint;
+
+            featureSet = fset;
+
+            var numFeatures = featureSet.features.length;
+
+            //设置查询面板显示内容
+            var title = "你选中了 " + numFeatures + " 个要素.";
+            var content = "详情点击.<br />";
+            for (var i = 0; i < numFeatures; i++) {
+                var graphic = featureSet.features[i];
+                content = content + graphic.attributes.OBJECTID_1 + "  (<A href='#' onclick='showFeature(featureSet.features[" + i + "]);'>show</A>)<br/>";
+            }
+            map.infoWindow.setTitle(title);
+            map.infoWindow.setContent(content);
+            map.infoWindow.show(screenPoint, map.getInfoWindowAnchor(evt.screenPoint));
+        }
+        //将feature集合的信息展示在表格中
+        function showFeatureSet(featureSet) {
+            map.graphics.clear();
+            var tablehtml = "<table>";
+            var symbol = new esri.symbol.SimpleMarkerSymbol(esri.symbol.SimpleMarkerSymbol.STYLE_SOLID, new dojo.Color([0, 182, 255]), 5);
+            $("#ResultsDiv").empty();
+            $.each(featureSet.features, function (index, feature) {
+                var attr = feature.attributes;
+                var trHtml = "<tr><td>" + attr.OBJECTID_1 + "</td><td>" + attr.DeptName1 + "</td></tr>";
+                tablehtml += trHtml;
+                feature.setSymbol(symbol);
+                map.graphics.add(feature);
+            });
+            tablehtml += "</table>";
+            $("#ResultsDiv").append(tablehtml);
+        }
+    </script>
+</head>
+<body class="claro">
+    <div style="width: 100%; height: 100%; margin: 0;">
+        <div id="map">
+        </div>
+    </div>
+    <div id="test" style="width:200px;height:auto;background:#fff;border:1px solid #000;position:absolute;top:10px;right:10px;">
+        <button type="button" onclick="openLayer('wmts,wmts_anno')">打开矢量</button>
+        <button type="button" onclick="openLayer('wp')">打开卫片</button>
+        <button type="button" onclick="openLayer('l25')">打开2.5d</button>
+        <button type="button" value="searchByPolygon" onclick="DrawPolygon()">空间查询</button>
+        <br />
+    </div>
+    <div id="testInfo" style="width:200px;height:auto;background:#fff;border:1px solid #000;position:absolute;top:60px;right:10px;">
+        <input id="keystr" type="text" value="OBJECTID_1=1" style="width:100px;" />
+        <input id="Button1" type="button" value="查询" onclick="search(null,dojo.byId('keystr').value,1)" />
+    </div>
+    <div id="ResultsDiv" style="width:200px;height:400px;overflow-y:auto; background:#fff;border:1px solid #000;position:absolute;top:90px;right:10px;">
+    </div>
+</body>
+</html>

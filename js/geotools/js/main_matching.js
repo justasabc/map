@@ -30,7 +30,6 @@ var map;
 var fsmap,vectorLayer;
 
 var point_fs = new Geo.LonLat(508005.71000913,2546218.3446376);
-var point_fs = new Geo.LonLat(511466.37936879694,2546847.857516554); // ERROR POINT
 var point_bd = fs2baidu(point_fs);
 var level_bd = 13;// level 1-19
 var level_fs = 0;// level 0-7
@@ -235,7 +234,7 @@ function init_fsmap(){
 	fsmap.addLayers([fslayer_yx,vectorLayer]); // image
 	//fsmap.addLayers([fslayer_25d,vectorLayer]); // image25d
 	fsmap.setCenter(point_fs, level_fs);
-	addFSPoint(point_fs);
+	//addFSPoint(point_fs);
 }
 
 function register_ui_events_dom(){
@@ -279,8 +278,124 @@ function register_ui_events_dom(){
 	showPointCount(point_pairs);// show count on startup
 }
 
+
+// different style for baidu and fs
+var bd_color;
+var fs_color='red'; // red yellow
+var g_point_count = 0;
+var g_point;
+var g_default_radius = 490;
+
 function test(){
+	errorAnalysis();
 };
+
+function getArrayAvg(array){
+	var avg = 0.0;
+	array.forEach(function(v,i){
+		avg += v;
+	});
+	avg = avg/array.length;
+	return avg.toFixed(2);
+}
+
+function getErrorDist(p){
+	var point_fs = {lon:p[0],lat:p[1]};
+	var point_bd = {lon:p[2],lat:p[3]};
+	var pt_fs = baidu_to_fs_allInOne(point_bd);// dst fs
+	var error_dist = dFS(pt_fs,point_fs);// src fs ---- dst fs
+	//error_dist = error_dist.toFixed(2);
+	return error_dist;
+}
+
+function getAvgErrorDist(point_pairs){
+	var dist_array = [];
+	point_pairs.forEach(function(p,i){
+		var error_dist = getErrorDist(p);
+		dist_array.push(error_dist);
+	});
+	return getArrayAvg(dist_array);
+}
+
+function testRadius_Error(){
+	var min = 200;
+	var max = 4000;
+	var delta = 10;
+	
+	var str = "";
+	for(var r = min; r<=max; r+=delta) {
+		g_default_radius = r;
+		var avg_error = getAvgErrorDist(point_pairs);
+		//str +=r+"\n"; // save dist to string
+		str +=avg_error+"\n"; // save dist to string
+		
+		//console.log(r+":"+avg_error);
+	}
+	
+	//save error file
+	var filename = "avg.txt";
+	download(filename,str);
+}
+
+
+function test_p(){
+	// [505594.280272,2550423.37488,113.067611,23.056286]   42.28
+	// 重新采集
+	// [505592.90233829,2550370.9551383,113.067612,23.056276]  2.42
+			
+	//var p = [505592.90233829,2550370.9551383,113.067612,23.056276];
+	
+	var p = [506862.50246988,2535910.0901259,113.080009,22.925406];
+	g_point = p;
+	var error_dist = getErrorDist(p);
+	console.log(error_dist);
+	
+	setColor2();
+	showOnePointPair(p);
+	setColor1();
+	return;
+}
+
+function errorAnalysis(){
+	//return testRadius_Error();
+	
+	//return test_p();
+	var avg = getAvgErrorDist(point_pairs);
+	console.log(avg);
+	//return;
+	
+	var dist_array = [];
+	var str = "";
+	point_pairs.forEach(function(p,i){
+		g_point = p; // for global use
+		
+		var point_fs = {lon:p[0],lat:p[1]};
+		var point_bd = {lon:p[2],lat:p[3]};
+		var pt_fs = baidu_to_fs_allInOne(point_bd);// dst fs
+		var error_dist = dFS(pt_fs,point_fs);// src fs ---- dst fs
+		error_dist = error_dist.toFixed(2);
+		dist_array.push(error_dist);
+		
+		//str +=error_dist+","; // save dist to string
+		
+		str +=error_dist+"\n"; // save dist to string
+		
+		// display error
+		var gap = 20;
+		if (error_dist >=gap){
+			console.log("["+i+"] "+error_dist);
+			console.log("["+point_fs.lon+","+point_fs.lat+","+point_bd.lon+","+point_bd.lat+"]");
+			//console.log(g_point_count);
+			setColor2();
+			showOnePointPair(p);
+			setColor1();
+		}
+	});
+	
+	//save error file
+	var filename = "error.txt";
+	download(filename,str);
+}
 
 // ===================================================================
 // grid related
@@ -387,16 +502,38 @@ function showByGrid(){
 	addGridByFSPoint(pt_fs);
 }
 
+function setColor1(){
+	// bd_color
+	fs_color = 'red';
+}
+
+function setColor2(){
+	// bd_color
+	fs_color = 'yellow';
+}
+
 function showPoints(points){
+	setColor1();
 	// for each data to add points to map
 	points.forEach(function(p){
+		showOnePointPair(p);
+		/*
 		var pt_fs = new OpenLayers.LonLat(p[0],p[1]);
 		addFSPoint(pt_fs);
 		
 		var pt_bd = new BMap.Point(p[2],p[3]);
 		addBaiduPoint(pt_bd);
+		*/
 	});
 };
+
+function showOnePointPair(p){
+	var pt_fs = new OpenLayers.LonLat(p[0],p[1]);
+	addFSPoint(pt_fs);
+		
+	var pt_bd = new BMap.Point(p[2],p[3]);
+	addBaiduPoint(pt_bd);
+}
 
 function clearPoints(){
 	map.clearOverlays();
