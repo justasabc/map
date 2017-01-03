@@ -1,36 +1,10 @@
 // by kezunlin 
-// date 2015-9-16
-/*
-// http://www.cnblogs.com/lyqf365/p/3287293.html
-// http://blog.csdn.net/zhizhu8256/article/details/8822675
-// http://t0.tianditu.com/cva_w/wmts?request=GetCapabilities&service=wmts
-// http://www.cnblogs.com/sailheart/archive/2011/03/11/1981536.html
-// http://blog.csdn.net/zhizhu8256/article/details/8823403
-
-Map Projection Code
-EPSG：4326  经纬度(in degree)
-EPSG：3785/900931  墨卡托(in meter)  
-
-EPSG: 4490  国家2000坐标系             
-http://blog.csdn.net/zhizhu8256/article/details/8822675
-
-<ows:SupportedCRS>urn:ogc:def:crs:EPSG::900913</ows:SupportedCRS>
-<ows:SupportedCRS>urn:ogc:def:crs:EPSG::4326</ows:SupportedCRS>
-
-for tianditu
-<ows:SupportedCRS>urn:ogc:def:crs:EPSG::4490</ows:SupportedCRS>
-vector
-http://www.tianditu.com/service/info.html?sid=1005&type=info
-image
-http://www.tianditu.com/service/info.html?sid=1061&type=info
-
-for tianditufs
-http://services.tianditugd.com/gdimg201311_anno/wmts?SERVICE=WMTS&VERSION=1.0.0&REQUEST=GetCapabilities
-*/
+// date 2016-12-23
 var map;
 var featureLayer;
 var heatLayer;
 var spatialReference_fs,spatialReference_wgs84;
+var queryTask;
 
 var level_offset = 13;
 var start_level = 13;
@@ -40,8 +14,6 @@ var default_level = 0; // 0-7--->13-20
 var vector,vectoranno,image,imageanno;
 var fs_vector,fs_image,fs_25dimage;
 var center;
-var layer1,layer2,layer3;
-var layers_data;
 var toolbar;
 var markerSymbol,lineSymbol,fillSymbol;
 var geometryService;
@@ -85,6 +57,7 @@ require([
 
     "esri/tasks/GeometryService",
     "esri/tasks/ProjectParameters",
+	"esri/tasks/QueryTask",
     "esri/tasks/query",
     "esri/tasks/FeatureSet",
 
@@ -102,6 +75,7 @@ require([
     "js/baidu/BaiduVectorLayer",
     "js/baidu/BaiduAnnoLayer",
     "js/baidu/BaiduImageLayer",
+	
     "esri/dijit/Measurement",
     "esri/dijit/Scalebar",
     "dijit/layout/BorderContainer", 
@@ -146,6 +120,7 @@ require([
 
     GeometryService,
     ProjectParameters,
+	QueryTask,
     Query,
     FeatureSet,
 
@@ -158,11 +133,12 @@ require([
     FS_TdtVectorLayer,
     FS_TdtImageLayer,
     FS_Tdt25DImageLayer,
-	HeatmapLayer,
+	HeatmapLayer, // HeatmapLayer 
 
     BaiduVectorLayer,
     BaiduAnnoLayer,
     BaiduImageLayer,
+	
     Measurement,
     Scalebar
       ) {
@@ -171,7 +147,6 @@ require([
 
     function main(){
 	    initSpatialReference();
-        pointTransformation();
 	
 	    // 504571,2541766
 	    var x = 504571;
@@ -184,33 +159,28 @@ require([
                 logo: false
         });
         map.on("load",onMapLoad);
-        //map.on("click",onMapClick);
+        map.on("click",onMapClick);
         map.on("zoom-end",onMapZoomEnd);
 		map.on("extent-change", onMapExtentChange);
 
-        initHomeButton();
+        //initHomeButton();
 	    initToolbar();
 
-        initVectorLayer();
+        //initVectorLayer();
+		initImageLayer();
 		
 		// init heat map layer
         //initFeatureLayer();
 		initHeatmap();
+		
+		pre_test();
+		
+		queryTask = new QueryTask("http://19.134.126.50/ArcGIS/rest/services/CCZF_ZJWG/MapServer/0");
     }
 	
 	function onMapExtentChange(){
 		console.log("onMapExtentChange");
 	}
-
-    function initFeatureLayer(){
-            featureLayer = new FeatureLayer("http://sampleserver3.arcgisonline.com/ArcGIS/rest/services/SanFrancisco/311Incidents/MapServer/0", {
-                mode: FeatureLayer.MODE_ONDEMAND,
-                visible: false
-            });
-            map.addLayer(featureLayer);
-
-            getFeatures();
-    }
 
     // get the features within the current extent from the feature layer
     function getFeatures() {
@@ -235,62 +205,32 @@ require([
                 }
                 // set heatmap data
                 heatLayer.setData(data);
-                });
+            });
     }
 
 	function initSpatialReference(){
 		spatialReference_fs = Setting.spatialReference_fs;
 		spatialReference_wgs84 = Setting.spatialReference_wgs84;
 	}
-
-    function pointTransformation(){
-            /*
-            //1) wgs84---fs
-		    var point = new OpenLayers.LonLat(113.101873,23.029604);
-		    point.transform(wgs_proj,fs_proj);
-		    console.log(point); // lon: 510336.9451766819  lat: 2547835.2998046526 
-            */
-		    var x = 113.101873, y = 23.029604;
-            var inputpoint = new Point({"x": x, "y": y, "spatialReference": spatialReference_wgs84 });
-            console.log(inputpoint);
-
-            // https://developers.arcgis.com/javascript/samples/util_coordinate_converter/
-            // http://resources.arcgis.com/en/help/arcgis-rest-api/index.html#/Project/02r3000000pv000000/
-            var geometryService = new esri.tasks.GeometryService("http://tasks.arcgisonline.com/ArcGIS/rest/services/Geometry/GeometryServer");
-            var PrjParams = new esri.tasks.ProjectParameters();
-            PrjParams.geometries = [inputpoint];
-            PrjParams.inSR = spatialReference_wgs84;
-            PrjParams.outSR = spatialReference_fs;
-
-            // project
-            geometryService.project(PrjParams, function (geometries) {
-                    console.log(geometries[0]);
-                    // Object {type: "point", x: 510336.945189592, y: 2547835.28105017, spatialReference: Object}
-            });
-    }
-
+    
     function initHeatmap(){
 			 // create heat layer
-            heatLayer = new HeatmapLayer({
-                "useLocalMaximum": false,
-                config: {
-                    "radius": 40,
-                    "gradient": {
-                        0.45: "rgb(000,000,255)",
-                        0.55: "rgb(000,255,255)",
-                        0.65: "rgb(000,255,000)",
-                        0.95: "rgb(255,255,000)",
-                        1.00: "rgb(255,000,000)"
-                    }
-                },
-                "map": map,
-                "opacity": 0.85
-            }, "heatLayer");
+		heatLayer = new HeatmapLayer({
+			"useLocalMaximum": false,
+			config: {
+				"radius": 40,
+				"gradient": {
+					0.45: "rgb(000,000,255)",
+					0.55: "rgb(000,255,255)",
+					0.65: "rgb(000,255,000)",
+					0.95: "rgb(255,255,000)",
+					1.00: "rgb(255,000,000)"
+				}
+			},
+			"map": map,
+			"opacity": 0.85
+		}, "heatLayer");
 
-        map.addLayer(heatLayer);
-        // resize map
-        //map.resize();
-		
 		// data = featureSet.features;
         var g = Graphic();
 		var data = [
@@ -323,8 +263,12 @@ require([
             }
         ];
         
-        //heatLayer.setData(data);
+        heatLayer.setData(data);
         //console.log(heatLayer);
+		
+		map.addLayer(heatLayer);
+        // resize map
+        //map.resize();
 		
 		// heatLayer.visible
 		//heatLayer.show();
@@ -345,10 +289,8 @@ require([
 
     function onMapLoad(e){
         console.log("onMapLoad");
-	    initLayersData();
-
         // for html ui
-        registerUIEvents();
+        //registerUIEvents();
     }
     function onMapClick(e){
         // e.mapPoint e.screenPoint
@@ -375,13 +317,7 @@ require([
             map.removeLayer(layer3);
         }
     }
-    function initHomeButton(){
-        var home = new HomeButton({
-                map: map
-            }, "HomeButton");
-            home.startup();
-    }
-
+    
 	function initToolbar() {
           toolbar = new Draw(map);
           toolbar.on("draw-end", addGraphic);
@@ -459,100 +395,18 @@ require([
 				  console.log(e);
 		  })
         }
-
-    function initLayersData(){
-        var urlprefix = "http://localhost";
-        layer1 = new GraphicsLayer();
-        var layer_name_1 = "jg";
-        var data_url_1 = urlprefix + "/map/data/layer1.json";
-        var image_url_1 = urlprefix + "/map/image/jg.jpg";
-        layer2 = new GraphicsLayer();
-        var layer_name_2 = "xsf";
-        var data_url_2 = urlprefix + "/map/data/layer2.json";
-        var image_url_2 = urlprefix + "/map/image/xfs.jpg";
-        layer3 = new GraphicsLayer();
-        var layer_name_3 = "ld";
-        var data_url_3 = urlprefix + "/map/data/layer3.json";
-        var image_url_3 = urlprefix + "/map/image/ld.jpg";
-        layers_data = [
-            {"layer":layer1,"layer_name":layer_name_1,"data_url":data_url_1,"image_url":image_url_1},
-            {"layer":layer2,"layer_name":layer_name_2,"data_url":data_url_2,"image_url":image_url_2},
-            {"layer":layer3,"layer_name":layer_name_3,"data_url":data_url_3,"image_url":image_url_3},
-            ];
-        layers_data.forEach( function(e){
-            createLayer(e.layer,e.layer_name,e.data_url,e.image_url);
-        });
-    }
-
-    function createLayer(layer,layer_name,data_url,image_url){
-        layer.id = layer_name;
-        var orangeRed = new Color([238, 69, 0, 0.5]); // hex is #ff4500
-        //var marker = new SimpleMarkerSymbol("solid", 15, null, orangeRed);
-        var marker = new PictureMarkerSymbol(image_url, 25, 25);
-        var renderer = new SimpleRenderer(marker);
-        layer.setRenderer(renderer);
-        var template = new InfoTemplate("<b>部件编号:</b> ${id}", 
-			"<b>地址描述:</b> ${address} </br> <b>所属部门:</b> ${department} </br> <b>部件用途:</b> ${usage} </br> <img src='${image}' width='200px' height='200px'/>");
-        layer.setInfoTemplate(template);
-
-        // get json data
-        $.ajax({       
-            type:"GET",       
-            url:data_url,
-            dataType:"json",       
-            success: function (data) {            
-                $.each(data, function(i,e){           
-						//  Typically the latitude coordinate is the Y value, and the longitude coordinate is the X value. 
-                    var pt = new Point(e.longitude,e.latitude,map.spatialReference);
-                    //console.log(pt);
-                    var attr = {
-                        "id":e.id,
-                        "address":e.address,
-                        "department":e.department,
-                        "usage":e.usage,
-                        "image":image_url 
-                    };
-                    var graphic = new Graphic(pt,marker,attr,template);
-                    layer.add(graphic);
-                });
-                layer.on("mouse-over",onMouseOver);
-                layer.on("mouse-out",onMouseOut);
-                //map.addLayer(layer);
-            },
-            error: function (data) {
-                console.log(data);
-            }
-        });  
-		
-		/*
-		// read local file using jQuery
-		$.get(data_url,function(data){
-			data.forEach(function(p){
-				console.log(p);
-			});
-			
-		});
-		*/
-    }
-
+     
     function onMouseOver(e){
         map.setCursor("pointer");
     }
     function onMouseOut(e){
         map.setCursor("default");
     }
-
     function initVectorLayer(){
 		if (use_fs){
 			fs_initVectorLayer();
 			return;
 		}
-
-        vector = new TdtVectorLayer();
-        map.addLayer(vector);
-
-        vectoranno = new TdtVectorAnnoLayer();
-        map.addLayer(vectoranno);
     }
 
     function initImageLayer(){
@@ -561,25 +415,28 @@ require([
 			//fs_init25DImageLayer();
 			return;
 		}
-
-        image = new TdtImageLayer();
-        map.addLayer(image);
-
-        imageanno = new TdtImageAnnoLayer();
-        map.addLayer(imageanno);
     }
-
 
 	function fs_initVectorLayer(){
         fs_vector = new FS_TdtVectorLayer();
+		fs_vector.id = 'vector';
         map.addLayer(fs_vector);
+		// map.layerIds  ["image","vector", "heatLayer"]
+		
+		/*
+		//CCSLLayer,CCYXLayer,CCGTFZH,  参考lib.layer.js文件
+		var mylayer = new CCSLLayer();
+		map.addLayer(mylayer);
+		*/
 	}
 	function fs_initImageLayer(){
         fs_image = new FS_TdtImageLayer();
+		fs_image.id = 'image';
         map.addLayer(fs_image);
 	}
     function fs_init25DImageLayer(){
         fs_25dimage = new FS_Tdt25DImageLayer();
+		fs_25dimage.id = '25d';
         map.addLayer(fs_25dimage);
     }
 
@@ -587,6 +444,7 @@ require([
 	// for html ui events
 	//===========================================================================================
 	function registerUIEvents(){
+		return;
 		initLayerSelect();
 		
 		$("#wellSelector").bind("change", selectWellLayer);
@@ -596,96 +454,90 @@ require([
 
 	}
 	
-	//图层选择工具条--井盖控制 creared at 2015-09-19 start
-	function selectWellLayer()
-	{
-		if($("#wellSelector").is(":checked"))
-		{
-				map.addLayer(layer1);
-		}
-		else
-		{
-				map.removeLayer(layer1);
-		}
-	}
-	//图层选择工具条--井盖控制 creared at 2015-09-19 end
-	
-	//图层选择工具条--摄像头控制 creared at 2015-09-19 start
-	function selectCameraLayer()
-	{
-		if($("#cameraSelector").is(":checked"))
-		{
-			map.addLayer(layer2);
-		}
-		else
-		{
-			map.removeLayer(layer2);
-		}
-	}
-	//图层选择工具条--摄像头控制 creared at 2015-09-19 end
-	
-	//图层选择工具条--路灯控制 creared at 2015-09-19 start
-	function selectLightLayer()
-	{
-		if($("#lightSelector").is(":checked"))
-		{
-			map.addLayer(layer3);
-		}
-		else
-		{
-			map.removeLayer(layer3);
-		}
-	}
-	//图层选择工具条--路灯控制 creared at 2015-09-19 end
-	
-	
-	//地图切换按钮功能函数 created at 2015-09-19 start
-	function changeMapType()
-	{
-		$.fn.custombox(this, {
-			url: "#changeMapWin",
-			effect: "fadein",
-			overlayOpacity: 0.5,
-			complete: function(){
-				$("#changeOverviewMap").bind("click", changeOverviewMap);
-				$("#changeImageMap").bind("click", changeImageMap);
-			}
-	    });
-	}
-	//地图切换按钮功能函数 created at 2015-09-19 end
-	
-	
-	//加载页面后设置图层选择checkbox为勾选状态，并显示所有图层 created at 2015-09-21 start
-	function initLayerSelect()
-	{
-		$("[name='mapLayerCheckbox']").attr("checked", "true");	
-		
-		map.addLayer(layer1);
-		map.addLayer(layer2);
-		map.addLayer(layer3);
-	}
-	//加载页面后设置图层选择checkbox为勾选状态，并显示所有图层 created at 2015-09-21 start
-	
-	//地图切换选择矢量图 created at 2015-09-19 start
-	function changeOverviewMap()
-	{
-		initVectorLayer();
-		$.fn.custombox('close');
-	}
-	//地图切换选择矢量图 created at 2015-09-19 end
-
-	//地图切换选择影像图 created at 2015-09-19 start
-	function changeImageMap()
-	{
-		initImageLayer();
-		//init25DImageLayer();
-		
-		$.fn.custombox('close');
-	}
-	//地图切换选择影像图 created at 2015-09-19 end
-	
 	//===========================================================================================
 	// for html ui events
 	//===========================================================================================
 
+	
+function pre_test(){
+	// ZJWG  PQWG  DWG  WWG
+	// tiled 
+	var url="http://19.134.126.50/ArcGIS/rest/services/CCZF_ZJWG/MapServer/";
+	var tiled = new esri.layers.ArcGISTiledMapServiceLayer(url);
+	tiled.id = 'tiled';
+	map.addLayer(tiled);
+	tiled.setVisibility(true);
+	
+	// no tiled (dynamic) 
+	// layer with  N child layers
+	var url = 'http://19.134.126.50/ArcGIS/rest/services/CCZF_BJ/MapServer';
+	var bj = new esri.layers.ArcGISDynamicMapServiceLayer(url);
+	bj.id = 'bj';
+	//map.addLayer(bj);
+	
+	ids = [0,1];
+	bj.setVisibleLayers(ids);
+	
+	//test();
+}
+
+function test(){
+	var url = 'http://19.134.126.50/ArcGIS/rest/services/CCZF_BJ/MapServer/0';
+	var template = new esri.InfoTemplate("RESULT", "ID: ${OBJECTID}");
+	var params = {outFields: ["OBJECTID","FS_X","FS_Y"],
+		infoTemplate: template
+	};
+	featurelayer = new esri.layers.FeatureLayer(url,params);
+	map.addLayer(featurelayer);
+	
+	
+        var symbol = new esri.symbol.SimpleMarkerSymbol(
+          esri.symbol.SimpleMarkerSymbol.STYLE_CIRCLE, 
+          12, 
+          new esri.symbol.SimpleLineSymbol(
+            esri.symbol.SimpleLineSymbol.STYLE_NULL, 
+            new esri.Color([247, 34, 101, 0.9]), 
+            1
+          ),
+          new esri.Color([207, 34, 171, 0.5])
+        );
+        featurelayer.setSelectionSymbol(symbol); 
+	
+	//featurelayer.setVisibility(true);
+}
+
+function queryLayer(featurelayer,evt){	
+	/*
+	var circle = new esri.geometry.Circle({
+            center: evt.mapPoint,
+            radius: 10,
+    });
+	*/	  
+     var query = new esri.tasks.Query();
+	 //query.geometry = geometry; // user defined select by geometry
+     query.outFields = ["*"];
+     query.returnGeometry = true;
+     query.orderByFields = ["OBJECTID"];
+     query.where = "OBJECTID=123"; // select by attributes 
+	 
+     featurelayer.selectFeatures(query, esri.layers.FeatureLayer.MODE_ONDEMAND, function(results) {
+		console.log(results.length);
+		alert("Total Records: #"+results.length);
+		// processing results here ...
+		var feature = results[0];
+		
+		var symbol = new esri.symbol.SimpleMarkerSymbol(esri.symbol.SimpleMarkerSymbol.STYLE_SQUARE,
+                100,
+                new esri.symbol.SimpleLineSymbol(esri.symbol.SimpleLineSymbol.STYLE_SOLID,
+                    new esri.Color([255,0,0]),
+                    1
+                ),
+                new esri.Color([255,0,0])
+            );
+		
+		map.graphics.add(new Graphic(evt.geometry, symbol));
+     });
+}
+
+	
 });

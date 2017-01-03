@@ -27,17 +27,27 @@
 </html>
 
 <script type="text/javascript">
+/*
             dojoConfig = {
                 parseOnLoad: true,
                 packages: [{
                     name: 'js',
-                    location: "http://localhost/map/js"
+                    location: "http://localhost/map/test/js"
                 }]
             };
+			*/
+			dojoConfig = {
+                parseOnLoad: true,
+				paths: {js: location.pathname.replace(/\/[^/]+$/, "") + "/js"}
+            };
+			
 </script>
+
 <script type="text/javascript" src="js/jquery-1.11.1.min.js"></script>
+
 <link rel="stylesheet" href="http://js.arcgis.com/3.14/dijit/themes/claro/claro.css">
 <link rel="stylesheet" href="http://js.arcgis.com/3.14/esri/css/esri.css">
 <script src="http://js.arcgis.com/3.14/"></script>
 <link rel="stylesheet" href="map.css">
+<script type="text/javascript" src="js/heatmap/heatmap-2.0.js"></script>
 <script type="text/javascript" src="map.js"></script>
